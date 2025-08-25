@@ -5,4 +5,6 @@ import reactor.core.publisher.Mono;
 
 public interface UsuarioRepository {
     Mono<Usuario> save(Usuario usuario);
+
+    Mono<Usuario> findByEmail(String email);
 }

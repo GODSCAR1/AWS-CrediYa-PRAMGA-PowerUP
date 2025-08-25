@@ -7,7 +7,7 @@ spring:
   devtools:
     add-properties: false
   profiles:
-    include:
+    include: null
 adapters:
   r2dbc:
     host: 127.0.0.1

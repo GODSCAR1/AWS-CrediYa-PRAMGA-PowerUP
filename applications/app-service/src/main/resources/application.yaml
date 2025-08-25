@@ -6,9 +6,12 @@ spring:
     name: AUTENTICACION
   devtools:
     add-properties: false
-  h2:
-    console:
-      enabled: true
-      path: /h2
   profiles:
     include:
+adapters:
+  r2dbc:
+    host: 127.0.0.1
+    port: 3307
+    database: autenticacion
+    username: appuser
+    password: app_pass_123

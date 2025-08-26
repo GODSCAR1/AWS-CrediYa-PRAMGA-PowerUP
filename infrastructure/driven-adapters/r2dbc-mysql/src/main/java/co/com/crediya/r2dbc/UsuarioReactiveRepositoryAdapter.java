@@ -32,4 +32,9 @@ public class UsuarioReactiveRepositoryAdapter extends ReactiveAdapterOperations<
     public Mono<Usuario> findByEmail(String email){
         return repository.findByEmail(email).map(this::toEntity);
     }
+
+    @Override
+    public Mono<Usuario> findByDocumentoIdentidad(String documentoIdentidad){
+        return repository.findByDocumentoIdentidad(documentoIdentidad).map(this::toEntity);
+    }
 }

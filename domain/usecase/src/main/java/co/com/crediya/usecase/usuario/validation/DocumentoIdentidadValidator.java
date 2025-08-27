@@ -13,10 +13,10 @@ public class DocumentoIdentidadValidator implements Validator<Usuario> {
     @Override
     public Mono<Void> validate(Usuario usuario) {
         if (usuario.getDocumentoIdentidad() == null || usuario.getDocumentoIdentidad().isBlank()) {
-            return Mono.error(new RuntimeException());
+            return Mono.error(new RuntimeException("El documento de identidad es obligatorio"));
         }
         return usuarioRepository.findByDocumentoIdentidad(usuario.getDocumentoIdentidad())
-                .flatMap(u -> Mono.error(new RuntimeException()));
+                .flatMap(u -> Mono.error(new RuntimeException("El documento de identidad ya existe")));
 
     }
 }

@@ -9,7 +9,7 @@ public class ApellidoValidator implements Validator<Usuario> {
     @Override
     public Mono<Void> validate(Usuario usuario) {
         return (usuario.getApellido() == null || usuario.getApellido().isBlank())
-                ? Mono.error(new RuntimeException())
+                ? Mono.error(new RuntimeException("El apellido es obligatorio"))
                 : Mono.empty();
     }
 }

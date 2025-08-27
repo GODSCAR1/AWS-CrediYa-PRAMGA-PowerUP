@@ -30,13 +30,17 @@ class UsuarioReactiveRepositoryAdapterTest {
             .id("1")
             .nombre("Nombre1")
             .apellido("Apellido1")
+            .email("email1@gmail.com")
+            .documentoIdentidad("12345678")
             .build();
 
     private final UsuarioEntity usuarioEntity = UsuarioEntity.builder()
             .id("1")
             .nombre("Nombre1")
             .apellido("Apellido1")
-            .build();;
+            .email("email1@gmail.com")
+            .documentoIdentidad("12345678")
+            .build();
 
     @Test
     void mustFindValueById() {

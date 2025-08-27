@@ -8,7 +8,7 @@ public class ContrasenaValidator implements Validator<Usuario> {
     @Override
     public Mono<Void> validate(Usuario usuario) {
         return (usuario.getContrasena() == null || usuario.getContrasena().isBlank())
-                ? Mono.error(new RuntimeException())
+                ? Mono.error(new RuntimeException("La contrasena es obligatoria"))
                 : Mono.empty();
     }
 }

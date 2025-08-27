@@ -19,14 +19,17 @@ public class UsuarioUseCase {
                 .doOnError(
                         error -> log.severe(String.format("Error de validación: %s",  error.getMessage()))
                 )
-                .then(this.rolRepository.findByNombre("Solicitante"))
-                .switchIfEmpty(Mono.defer(() -> {
-                    log.severe("Rol no encontrado");
-                    return Mono.error(new RuntimeException("Rol no encontrado"));}))
-                .flatMap(rol -> {
-                    usuario.setIdRol(rol.getId());
-                    return this.usuarioRepository.save(usuario);
-                })
+                .then(Mono.defer(() ->
+                        this.rolRepository.findByNombre("Solicitante")
+                                .switchIfEmpty(Mono.defer(() -> {
+                                    log.severe("Rol no encontrado");
+                                    return Mono.error(new RuntimeException("Rol no encontrado"));
+                                }))
+                                .flatMap(rol -> {
+                                    usuario.setIdRol(rol.getId());
+                                    return this.usuarioRepository.save(usuario);
+                                })
+                ))
                 .doOnSuccess(
                         usuarioGuardado -> log.info(String.format("Usuario %s creado exitosamente", usuarioGuardado.getEmail()))
                 );

@@ -18,13 +18,13 @@ public class EmailValidator implements Validator<Usuario> {
     @Override
     public Mono<Void> validate(Usuario usuario) {
         if (usuario.getEmail() == null || usuario.getEmail().isBlank()) {
-            return Mono.error(new RuntimeException());
+            return Mono.error(new RuntimeException("El email es obligatorio"));
         }
-        if (pattern.matcher(usuario.getEmail()).matches()){
-            return Mono.error(new RuntimeException());
+        if (!pattern.matcher(usuario.getEmail()).matches()){
+            return Mono.error(new RuntimeException("El email es invalido"));
         }
         return usuarioRepository.findByEmail(usuario.getEmail())
-                .flatMap(u -> Mono.error(new RuntimeException()));
+                .flatMap(u -> Mono.error(new RuntimeException("El email ya existe")));
 
     }
 }

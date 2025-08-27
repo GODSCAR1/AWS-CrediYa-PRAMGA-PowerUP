@@ -13,13 +13,13 @@ public class SalarioBaseValidator implements Validator<Usuario> {
     @Override
     public Mono<Void> validate(Usuario usuario) {
         if(usuario.getSalarioBase() == null){
-            return Mono.error(new RuntimeException());
+            return Mono.error(new RuntimeException("El salario base es obligatorio"));
         }
         if(usuario.getSalarioBase().compareTo(SALARIO_BASE_MINIMO) < 0){
-            return Mono.error(new RuntimeException());
+            return Mono.error(new RuntimeException("El salario base debe ser mayor o igual a 0"));
         }
         if(usuario.getSalarioBase().compareTo(SALARIO_BASE_MAXIMO) > 0){
-            return Mono.error(new RuntimeException());
+            return Mono.error(new RuntimeException("El salario base debe ser menor o igual a 15000000"));
         }
         return Mono.empty();
     }

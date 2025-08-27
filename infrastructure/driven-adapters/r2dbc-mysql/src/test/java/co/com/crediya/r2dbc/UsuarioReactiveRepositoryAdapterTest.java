@@ -66,7 +66,6 @@ class UsuarioReactiveRepositoryAdapterTest {
                 .expectNext(usuario)
                 .verifyComplete();
     }
-
     @Test
     void mustSaveValue() {
         when(mapper.map(usuarioEntity, Usuario.class)).thenReturn(usuario);

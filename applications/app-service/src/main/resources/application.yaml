@@ -1,17 +1,31 @@
-##Spring Configuration
 server:
   port: 8080
 spring:
   application:
-    name: AUTENTICACION
+    name: "AUTENTICACION"
   devtools:
     add-properties: false
   profiles:
     include: null
 adapters:
   r2dbc:
-    host: 127.0.0.1
+    host: "127.0.0.1"
     port: 3307
-    database: autenticacion
-    username: appuser
-    password: app_pass_123
+    database: "autenticacion"
+    username: "appuser"
+    password: "app_pass_123"
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,prometheus"
+  endpoint:
+    health:
+      probes:
+        enabled: true
+cors:
+  allowed-origins: "http://localhost:4200,http://localhost:8080"
+
+routes:
+  paths:
+    createUsuario: "/api/v1/usuario"

@@ -3,13 +3,11 @@ package co.com.crediya.usecase.usuario.composite;
 import co.com.crediya.model.Usuario;
 import co.com.crediya.usecase.usuario.Validator;
 import co.com.crediya.usecase.usuario.validation.*;
-import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.List;
 
-@Component
 public class UsuarioValidationComposite implements Validator<Usuario> {
 
     private final List<Validator<Usuario>> validator;

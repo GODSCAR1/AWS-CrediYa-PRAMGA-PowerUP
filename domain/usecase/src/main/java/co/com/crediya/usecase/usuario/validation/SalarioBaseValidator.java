@@ -2,13 +2,11 @@ package co.com.crediya.usecase.usuario.validation;
 
 import co.com.crediya.model.Usuario;
 import co.com.crediya.usecase.usuario.Validator;
-import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 
 //TODO: Implimentar excepción personalizada.
-@Component
 public class SalarioBaseValidator implements Validator<Usuario> {
     private static final BigDecimal SALARIO_BASE_MINIMO = BigDecimal.ZERO;
     private static final BigDecimal SALARIO_BASE_MAXIMO = BigDecimal.valueOf(15000000);

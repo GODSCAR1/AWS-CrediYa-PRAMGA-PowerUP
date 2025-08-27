@@ -4,11 +4,9 @@ import co.com.crediya.model.Usuario;
 import co.com.crediya.model.gateways.UsuarioRepository;
 import co.com.crediya.usecase.usuario.Validator;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 //TODO: Crear una excepcion personalizada
-@Component
 @RequiredArgsConstructor
 public class DocumentoIdentidadValidator implements Validator<Usuario> {
     private final UsuarioRepository usuarioRepository;

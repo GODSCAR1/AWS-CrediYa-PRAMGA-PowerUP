@@ -4,13 +4,11 @@ import co.com.crediya.model.Usuario;
 import co.com.crediya.model.gateways.UsuarioRepository;
 import co.com.crediya.usecase.usuario.Validator;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 import java.util.regex.Pattern;
 
 //TODO: Crear una excepcion personalizada
-@Component
 @RequiredArgsConstructor
 public class EmailValidator implements Validator<Usuario> {
     private static final String EMAIL_REGEX = "^[A-Za-z0-9.%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";

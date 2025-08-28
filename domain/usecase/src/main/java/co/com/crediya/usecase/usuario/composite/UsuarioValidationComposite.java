@@ -3,6 +3,7 @@ package co.com.crediya.usecase.usuario.composite;
 import co.com.crediya.model.Usuario;
 import co.com.crediya.usecase.usuario.Validator;
 import co.com.crediya.usecase.usuario.validation.*;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
@@ -31,8 +32,8 @@ public class UsuarioValidationComposite implements Validator<Usuario> {
     }
     @Override
     public Mono<Void> validate(Usuario usuario) {
-        return this.validator.stream()
-                .map(v -> v.validate(usuario))
-                .reduce(Mono.empty(), Mono::then);
+        return Flux.fromIterable(this.validator)
+                .flatMap(v -> v.validate(usuario), 1)  // ← maxConcurrency = 1
+                .then();
     }
 }

@@ -9,20 +9,16 @@ spring:
     include: null
 adapters:
   r2dbc:
+    type: "mysql"
     host: "127.0.0.1"
     port: 3307
     database: "autenticacion"
     username: "appuser"
     password: "app_pass_123"
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "health,prometheus"
-  endpoint:
-    health:
-      probes:
-        enabled: true
+logging:
+  level:
+    io.r2dbc.mysql.QUERY: DEBUG # Para ver las queries
+    io.r2dbc.mysql.PARAM: DEBUG
 cors:
   allowed-origins: "http://localhost:4200,http://localhost:8080"
 

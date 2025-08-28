@@ -4,10 +4,10 @@ import co.com.crediya.model.Usuario;
 import co.com.crediya.model.gateways.RolRepository;
 import co.com.crediya.model.gateways.UsuarioRepository;
 import co.com.crediya.usecase.usuario.composite.UsuarioValidationComposite;
+import co.com.crediya.usecase.usuario.exception.RolValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import reactor.core.publisher.Mono;
-//TODO: Crear una excepcion personalizada
 @RequiredArgsConstructor
 @Log
 public class UsuarioUseCase {
@@ -17,13 +17,13 @@ public class UsuarioUseCase {
     public Mono<Usuario> createUsuario(Usuario usuario){
         return this.usuarioValidationComposite.validate(usuario)
                 .doOnError(
-                        error -> log.severe(String.format("Error de validación: %s",  error.getMessage()))
+                        error -> log.severe(String.format("Error de validacion: %s",  error.getMessage()))
                 )
                 .then(Mono.defer(() ->
                         this.rolRepository.findByNombre("Solicitante")
                                 .switchIfEmpty(Mono.defer(() -> {
                                     log.severe("Rol no encontrado");
-                                    return Mono.error(new RuntimeException("Rol no encontrado"));
+                                    return Mono.error(new RolValidationException("Rol no encontrado"));
                                 }))
                                 .flatMap(rol -> {
                                     usuario.setIdRol(rol.getId());

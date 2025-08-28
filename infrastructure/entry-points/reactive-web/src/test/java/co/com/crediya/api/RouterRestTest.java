@@ -1,8 +1,5 @@
-package co.crediyacorp.api;
+package co.com.crediya.api;
 
-
-import co.com.crediya.api.Handler;
-import co.com.crediya.api.RouterRest;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

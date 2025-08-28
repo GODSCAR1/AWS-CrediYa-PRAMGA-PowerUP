@@ -5,6 +5,8 @@ import co.com.crediya.model.Usuario;
 import co.com.crediya.model.gateways.RolRepository;
 import co.com.crediya.model.gateways.UsuarioRepository;
 import co.com.crediya.usecase.usuario.composite.UsuarioValidationComposite;
+import co.com.crediya.usecase.usuario.exception.RolValidationException;
+import co.com.crediya.usecase.usuario.exception.UsuarioValidationException;
 import co.com.crediya.usecase.usuario.validation.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,7 +78,7 @@ class UsuarioUseCaseTest {
         when(this.usuarioRepository.findByDocumentoIdentidad(usuario.getDocumentoIdentidad())).thenReturn(Mono.empty());
         StepVerifier.create(usuarioUseCase.createUsuario(usuario))
                 .expectErrorMatches(ex ->
-                        ex instanceof RuntimeException
+                        ex instanceof UsuarioValidationException
                                 && "El nombre es obligatorio".equals(ex.getMessage()))
                 .verify();
 
@@ -89,7 +91,7 @@ class UsuarioUseCaseTest {
         when(this.usuarioRepository.findByDocumentoIdentidad(usuario.getDocumentoIdentidad())).thenReturn(Mono.empty());
         StepVerifier.create(usuarioUseCase.createUsuario(usuario))
                 .expectErrorMatches(ex ->
-                        ex instanceof RuntimeException
+                        ex instanceof UsuarioValidationException
                                 && "El nombre es obligatorio".equals(ex.getMessage()))
                 .verify();
 
@@ -102,7 +104,7 @@ class UsuarioUseCaseTest {
         when(this.usuarioRepository.findByDocumentoIdentidad(usuario.getDocumentoIdentidad())).thenReturn(Mono.empty());
         StepVerifier.create(usuarioUseCase.createUsuario(usuario))
                 .expectErrorMatches(ex ->
-                        ex instanceof RuntimeException
+                        ex instanceof UsuarioValidationException
                                 && "El apellido es obligatorio".equals(ex.getMessage()))
                 .verify();
 
@@ -116,7 +118,7 @@ class UsuarioUseCaseTest {
         when(this.usuarioRepository.findByDocumentoIdentidad(usuario.getDocumentoIdentidad())).thenReturn(Mono.empty());
         StepVerifier.create(usuarioUseCase.createUsuario(usuario))
                 .expectErrorMatches(ex ->
-                        ex instanceof RuntimeException
+                        ex instanceof UsuarioValidationException
                                 && "El apellido es obligatorio".equals(ex.getMessage()))
                 .verify();
 
@@ -130,7 +132,7 @@ class UsuarioUseCaseTest {
         when(this.usuarioRepository.findByDocumentoIdentidad(usuario.getDocumentoIdentidad())).thenReturn(Mono.empty());
         StepVerifier.create(usuarioUseCase.createUsuario(usuario))
                 .expectErrorMatches(ex ->
-                        ex instanceof RuntimeException
+                        ex instanceof UsuarioValidationException
                                 && "El email es obligatorio".equals(ex.getMessage()))
                 .verify();
 
@@ -143,7 +145,7 @@ class UsuarioUseCaseTest {
         when(this.usuarioRepository.findByDocumentoIdentidad(usuario.getDocumentoIdentidad())).thenReturn(Mono.empty());
         StepVerifier.create(usuarioUseCase.createUsuario(usuario))
                 .expectErrorMatches(ex ->
-                        ex instanceof RuntimeException
+                        ex instanceof UsuarioValidationException
                                 && "El email es obligatorio".equals(ex.getMessage()))
                 .verify();
 
@@ -156,7 +158,7 @@ class UsuarioUseCaseTest {
         when(this.usuarioRepository.findByDocumentoIdentidad(usuario.getDocumentoIdentidad())).thenReturn(Mono.empty());
         StepVerifier.create(usuarioUseCase.createUsuario(usuario))
                 .expectErrorMatches(ex ->
-                        ex instanceof RuntimeException
+                        ex instanceof UsuarioValidationException
                                 && "El email es invalido".equals(ex.getMessage()))
                 .verify();
 
@@ -169,7 +171,7 @@ class UsuarioUseCaseTest {
         when(this.usuarioRepository.findByDocumentoIdentidad(usuario.getDocumentoIdentidad())).thenReturn(Mono.empty());
         StepVerifier.create(usuarioUseCase.createUsuario(usuario))
                 .expectErrorMatches(ex ->
-                        ex instanceof RuntimeException
+                        ex instanceof UsuarioValidationException
                                 && "El email ya existe".equals(ex.getMessage()))
                 .verify();
 
@@ -183,7 +185,7 @@ class UsuarioUseCaseTest {
         when(this.usuarioRepository.findByDocumentoIdentidad(usuario.getDocumentoIdentidad())).thenReturn(Mono.empty());
         StepVerifier.create(usuarioUseCase.createUsuario(usuario))
                 .expectErrorMatches(ex ->
-                        ex instanceof RuntimeException
+                        ex instanceof UsuarioValidationException
                                 && "El documento de identidad es obligatorio".equals(ex.getMessage()))
                 .verify();
 
@@ -196,7 +198,7 @@ class UsuarioUseCaseTest {
         when(this.usuarioRepository.findByDocumentoIdentidad(usuario.getDocumentoIdentidad())).thenReturn(Mono.empty());
         StepVerifier.create(usuarioUseCase.createUsuario(usuario))
                 .expectErrorMatches(ex ->
-                        ex instanceof RuntimeException
+                        ex instanceof UsuarioValidationException
                                 && "El documento de identidad es obligatorio".equals(ex.getMessage()))
                 .verify();
 
@@ -208,7 +210,7 @@ class UsuarioUseCaseTest {
         when(this.usuarioRepository.findByDocumentoIdentidad(usuario.getDocumentoIdentidad())).thenReturn(Mono.just(usuario));
         StepVerifier.create(usuarioUseCase.createUsuario(usuario))
                 .expectErrorMatches(ex ->
-                        ex instanceof RuntimeException
+                        ex instanceof UsuarioValidationException
                                 && "El documento de identidad ya existe".equals(ex.getMessage()))
                 .verify();
 
@@ -221,7 +223,7 @@ class UsuarioUseCaseTest {
         when(this.usuarioRepository.findByDocumentoIdentidad(usuario.getDocumentoIdentidad())).thenReturn(Mono.empty());
         StepVerifier.create(usuarioUseCase.createUsuario(usuario))
                 .expectErrorMatches(ex ->
-                        ex instanceof RuntimeException
+                        ex instanceof UsuarioValidationException
                                 && "La contrasena es obligatoria".equals(ex.getMessage()))
                 .verify();
 
@@ -235,7 +237,7 @@ class UsuarioUseCaseTest {
         when(this.usuarioRepository.findByDocumentoIdentidad(usuario.getDocumentoIdentidad())).thenReturn(Mono.empty());
         StepVerifier.create(usuarioUseCase.createUsuario(usuario))
                 .expectErrorMatches(ex ->
-                        ex instanceof RuntimeException
+                        ex instanceof UsuarioValidationException
                                 && "La contrasena es obligatoria".equals(ex.getMessage()))
                 .verify();
 
@@ -249,7 +251,7 @@ class UsuarioUseCaseTest {
         when(this.usuarioRepository.findByDocumentoIdentidad(usuario.getDocumentoIdentidad())).thenReturn(Mono.empty());
         StepVerifier.create(usuarioUseCase.createUsuario(usuario))
                 .expectErrorMatches(ex ->
-                        ex instanceof RuntimeException
+                        ex instanceof UsuarioValidationException
                                 && "El salario base es obligatorio".equals(ex.getMessage()))
                 .verify();
 
@@ -264,7 +266,7 @@ class UsuarioUseCaseTest {
         when(this.usuarioRepository.findByDocumentoIdentidad(usuario.getDocumentoIdentidad())).thenReturn(Mono.empty());
         StepVerifier.create(usuarioUseCase.createUsuario(usuario))
                 .expectErrorMatches(ex ->
-                        ex instanceof RuntimeException
+                        ex instanceof UsuarioValidationException
                                 && "El salario base debe ser mayor o igual a 0".equals(ex.getMessage()))
                 .verify();
 
@@ -278,7 +280,7 @@ class UsuarioUseCaseTest {
         when(this.usuarioRepository.findByDocumentoIdentidad(usuario.getDocumentoIdentidad())).thenReturn(Mono.empty());
         StepVerifier.create(usuarioUseCase.createUsuario(usuario))
                 .expectErrorMatches(ex ->
-                        ex instanceof RuntimeException
+                        ex instanceof UsuarioValidationException
                                 && "El salario base debe ser menor o igual a 15000000".equals(ex.getMessage()))
                 .verify();
 
@@ -292,7 +294,7 @@ class UsuarioUseCaseTest {
         when(this.rolRepository.findByNombre("Solicitante")).thenReturn(Mono.empty());
         StepVerifier.create(usuarioUseCase.createUsuario(usuario))
                 .expectErrorMatches(ex ->
-                        ex instanceof RuntimeException
+                        ex instanceof RolValidationException
                                 && "Rol no encontrado".equals(ex.getMessage()))
                 .verify();
         verify(usuarioRepository, never()).save(any(Usuario.class));

@@ -1,10 +1,10 @@
 dependencies {
     implementation project(':model')
+    implementation project(':usecase')
     implementation 'org.springframework:spring-context'
     implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
     implementation 'io.r2dbc:r2dbc-pool'
-    implementation 'io.asyncer:r2dbc-mysql:1.4.1'
-    implementation 'org.postgresql:r2dbc-postgresql'
+    implementation 'io.asyncer:r2dbc-mysql:1.0.2'
     implementation 'org.reactivecommons.utils:object-mapper-api:0.1.0'
 
     testImplementation 'org.reactivecommons.utils:object-mapper:0.1.0'

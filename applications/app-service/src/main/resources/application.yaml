@@ -25,3 +25,4 @@ cors:
 routes:
   paths:
     createUsuario: "/api/v1/usuario"
+    searchUsuario: "/api/v1/usuario/{email}"

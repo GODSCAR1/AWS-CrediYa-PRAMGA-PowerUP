@@ -25,7 +25,7 @@ public class EmailValidator implements Validator<Usuario> {
         }
         return usuarioRepository.findByEmail(usuario.getEmail())
                 .flatMap(u -> Mono.error(new UsuarioValidationException("El email ya existe")))
-                .cast(Void.class)  // ← Convertir el tipo
+                .cast(Void.class)
                 .switchIfEmpty(Mono.empty());
 
     }

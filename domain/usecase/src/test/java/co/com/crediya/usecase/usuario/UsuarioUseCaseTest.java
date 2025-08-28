@@ -6,6 +6,7 @@ import co.com.crediya.model.gateways.RolRepository;
 import co.com.crediya.model.gateways.UsuarioRepository;
 import co.com.crediya.usecase.usuario.composite.UsuarioValidationComposite;
 import co.com.crediya.usecase.usuario.exception.RolValidationException;
+import co.com.crediya.usecase.usuario.exception.UsuarioNotFoundException;
 import co.com.crediya.usecase.usuario.exception.UsuarioValidationException;
 import co.com.crediya.usecase.usuario.validation.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -316,5 +317,46 @@ class UsuarioUseCaseTest {
                 .verifyComplete();
         verify(usuarioRepository).save(any(Usuario.class));
     }
+
+    @Test
+    void searchUsuarioMustFailWhenEmailIsNull(){
+        String email = null;
+        StepVerifier.create(usuarioUseCase.searchUsuario(email))
+                .expectErrorMatches(ex ->
+                        ex instanceof UsuarioValidationException
+                                && "El email es obligatorio".equals(ex.getMessage()))
+                .verify();
+        verify(usuarioRepository, never()).findByEmail(any(String.class));
+    }
+
+    @Test
+    void searchUsuarioMustFailWhenEmailIsBlank(){
+        String email = "";
+        StepVerifier.create(usuarioUseCase.searchUsuario(email))
+                .expectErrorMatches(ex ->
+                        ex instanceof UsuarioValidationException
+                                && "El email es obligatorio".equals(ex.getMessage()))
+                .verify();
+        verify(usuarioRepository, never()).findByEmail(any(String.class));
+    }
+
+    @Test
+    void searchUsuarioMustFailWhenUserIsNotFound(){
+        when(this.usuarioRepository.findByEmail(usuario.getEmail())).thenReturn(Mono.empty());
+        StepVerifier.create(usuarioUseCase.searchUsuario(usuario.getEmail()))
+                .expectErrorMatches(ex ->
+                        ex instanceof UsuarioNotFoundException
+                                && "Usuario no encontrado".equals(ex.getMessage()))
+                .verify();
+    }
+
+    @Test
+    void searchUsuarioMustSuccess(){
+        when(this.usuarioRepository.findByEmail(usuario.getEmail())).thenReturn(Mono.just(usuario));
+        StepVerifier.create(usuarioUseCase.searchUsuario(usuario.getEmail()))
+                .assertNext(u -> assertEquals(Boolean.TRUE,u))
+                .verifyComplete();
+    }
+
 
 }

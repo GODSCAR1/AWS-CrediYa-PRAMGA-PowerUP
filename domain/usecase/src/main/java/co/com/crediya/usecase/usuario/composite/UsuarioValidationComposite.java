@@ -33,7 +33,7 @@ public class UsuarioValidationComposite implements Validator<Usuario> {
     @Override
     public Mono<Void> validate(Usuario usuario) {
         return Flux.fromIterable(this.validator)
-                .flatMap(v -> v.validate(usuario), 1)  // ← maxConcurrency = 1
+                .flatMap(v -> v.validate(usuario), 1)
                 .then();
     }
 }

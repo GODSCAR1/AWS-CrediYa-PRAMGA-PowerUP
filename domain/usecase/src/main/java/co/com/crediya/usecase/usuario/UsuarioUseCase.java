@@ -5,6 +5,9 @@ import co.com.crediya.model.gateways.RolRepository;
 import co.com.crediya.model.gateways.UsuarioRepository;
 import co.com.crediya.usecase.usuario.composite.UsuarioValidationComposite;
 import co.com.crediya.usecase.usuario.exception.RolValidationException;
+import co.com.crediya.usecase.usuario.exception.UsuarioNotFoundException;
+import co.com.crediya.usecase.usuario.exception.UsuarioValidationException;
+import co.com.crediya.usecase.usuario.validation.EmailValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import reactor.core.publisher.Mono;
@@ -32,6 +35,18 @@ public class UsuarioUseCase {
                 ))
                 .doOnSuccess(
                         usuarioGuardado -> log.info(String.format("Usuario %s creado exitosamente", usuarioGuardado.getEmail()))
+                );
+    }
+
+    public Mono<Boolean> searchUsuario(String email){
+        if (email == null || email.isBlank()) {
+            return Mono.error(new UsuarioValidationException("El email es obligatorio"));
+        }
+        return this.usuarioRepository.findByEmail(email)
+                .map(u -> true)
+                .switchIfEmpty(Mono.error(new UsuarioNotFoundException("Usuario no encontrado")))
+                .doOnSuccess(
+                        usuarioEncontrado -> log.info(String.format("Usuario %s encontrado exitosamente", email))
                 );
     }
 }

@@ -39,10 +39,7 @@ public class Handler {
                 .flatMap(createUsuarioDtoResponse ->
                         ServerResponse.created(serverRequest.uri())
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .bodyValue(createUsuarioDtoResponse))
-                .onErrorResume(error -> ServerResponse.status(HttpStatus.BAD_REQUEST)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue(Map.of("error", error.getMessage())));
+                                .bodyValue(createUsuarioDtoResponse));
     }
 
     public Mono<ServerResponse> listenSearchUsuario(ServerRequest serverRequest) {

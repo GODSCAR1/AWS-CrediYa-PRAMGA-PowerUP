@@ -5,6 +5,7 @@ import co.com.crediya.api.dto.CreateUsuarioDtoRequest;
 import co.com.crediya.api.dto.CreateUsuarioDtoResponse;
 import co.com.crediya.api.dto.SearchUsuarioResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
@@ -15,6 +16,7 @@ import org.springdoc.core.annotations.RouterOperations;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
@@ -57,20 +59,22 @@ public class RouterRest {
                                             description = "Error en la validacion de datos"
                                     )
                             }
-                    )
+                    ),
+                    path = "/api/v1/usuario",
+                    method = RequestMethod.POST
             ),
     @RouterOperation(
             operation = @Operation(
                     operationId = "searchUsuario",
-                    summary = "Buscar usuario por email",
-                    description = "Busca un usuario por email y devuelve true si existe o mensaje de error si no existe",
+                    summary = "Buscar usuario por documento de identidad",
+                    description = "Busca un usuario por documento de identidad y devuelve true si existe o mensaje de error si no existe",
                     tags = {"Usuarios"},
                     parameters = {
-                            @io.swagger.v3.oas.annotations.Parameter(
-                                    name = "email",
-                                    description = "Email del usuario a buscar",
+                            @Parameter(
+                                    name = "documentoIdentidad",
+                                    description = "documento de ientidad del usuario",
                                     required = true,
-                                    example = "usuario@example.com",
+                                    example = "12345678",
                                     schema = @Schema(type = "string")
                             )
                     },
@@ -89,10 +93,12 @@ public class RouterRest {
                             ),
                             @ApiResponse(
                                     responseCode = "400",
-                                    description = "Email no proporcionado o invalido"
+                                    description = "Documento de identidad no proporcionado o invalido"
                             )
                     }
-            )
+            ),
+            path = "/api/v1/usuario/{documentoIdentidad}",
+            method = RequestMethod.GET
         )
     })
     public RouterFunction<ServerResponse> routerFunction(Handler handler) {

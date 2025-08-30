@@ -12,5 +12,5 @@ import org.springframework.context.annotation.FilterType;
                 @ComponentScan.Filter(type = FilterType.REGEX, pattern = "^.+ValidationComposite$")
         },
         useDefaultFilters = false)
-public class UseCasesConfig {
+public class  UseCasesConfig {
 }

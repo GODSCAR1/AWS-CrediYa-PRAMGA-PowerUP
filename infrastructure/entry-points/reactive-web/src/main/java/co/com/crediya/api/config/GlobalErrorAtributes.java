@@ -18,11 +18,17 @@ public class GlobalErrorAtributes extends DefaultErrorAttributes {
         Map<String, Object> atributes = super.getErrorAttributes(request, options);
         Throwable error = getError(request);
 
-        if (error instanceof UsuarioValidationException || error instanceof UsuarioNotFoundException){
+        if (error instanceof UsuarioValidationException ){
             atributes.put("status", HttpStatus.BAD_REQUEST.value());
             atributes.put("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
             atributes.put("message", error.getMessage());
-        }else{
+        }
+        else if (error instanceof UsuarioNotFoundException){
+            atributes.put("status", HttpStatus.NOT_FOUND.value());
+            atributes.put("error", HttpStatus.NOT_FOUND.getReasonPhrase());
+            atributes.put("message", error.getMessage());
+        }
+        else{
             atributes.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
             atributes.put("error", HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
             atributes.put("message", "Ocurrio un error inesperado");

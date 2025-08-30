@@ -23,15 +23,7 @@ public class MontoValidator implements Validator<Solicitud> {
             return Mono.error(new SolicitudValidationException("El monto debe ser mayor a cero"));
         }
 
-        return this.tipoPrestamoRepository.findByNombre(solicitud.getNombreTipoPrestamo())
-                .flatMap(tipoPrestamo -> {
-                    if(solicitud.getMonto().compareTo(tipoPrestamo.getMontoMinimo()) < 0
-                            || solicitud.getMonto().compareTo(tipoPrestamo.getMontoMaximo()) > 0){
-                        return Mono.error(new SolicitudValidationException("El monto debe estar entre "
-                                + tipoPrestamo.getMontoMinimo() + " y " + tipoPrestamo.getMontoMaximo()));
-                    }
-                    return Mono.empty();
-                });
+        return Mono.empty();
 
     }
 }

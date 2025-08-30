@@ -18,16 +18,16 @@ public class SolicitudValidationComposite implements Validator<Solicitud> {
 
 
     public SolicitudValidationComposite(
-            EmailValidator emailValidator,
-            PrestamoValidator prestamoValidator,
             MontoValidator montoValidator,
-            PlazoValidator plazoValidator
+            PlazoValidator plazoValidator,
+            PrestamoValidator prestamoValidator,
+            EmailValidator emailValidator
     ) {
         this.validator = Arrays.asList(
-                emailValidator,
-                prestamoValidator,
                 montoValidator,
-                plazoValidator);
+                plazoValidator,
+                prestamoValidator,
+                emailValidator);
     }
     @Override
     public Mono<Void> validate(Solicitud solicitud) {

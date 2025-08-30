@@ -4,5 +4,5 @@ import reactor.core.publisher.Mono;
 
 public interface AutenticacionExternalService {
 
-    Mono<Boolean> validateUsuario(String documentoIdentidad);
+    Mono<Boolean> validateUsuario(String email);
 }

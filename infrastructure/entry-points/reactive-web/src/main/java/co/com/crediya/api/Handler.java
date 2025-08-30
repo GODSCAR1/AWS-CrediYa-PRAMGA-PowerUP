@@ -37,7 +37,7 @@ public class Handler {
                 .flatMap(usuarioCreado ->
                         Mono.just(objectMapper.map(usuarioCreado, CreateUsuarioDtoResponse.class)))
                 .flatMap(createUsuarioDtoResponse ->
-                        ServerResponse.ok()
+                        ServerResponse.created(serverRequest.uri())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .bodyValue(createUsuarioDtoResponse))
                 .onErrorResume(error -> ServerResponse.status(HttpStatus.BAD_REQUEST)

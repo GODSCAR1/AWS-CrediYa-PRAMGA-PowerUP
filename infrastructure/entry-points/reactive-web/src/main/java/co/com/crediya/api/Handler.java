@@ -19,10 +19,11 @@ public class Handler {
     private final TransactionalSolicitudUseCase transactionalSolicitudUseCase;
     private final ObjectMapper objectMapper;
     public Mono<ServerResponse> listenCreateSolicitud(ServerRequest serverRequest) {
+        String authHeader = serverRequest.headers().firstHeader("X-User-Email");
         return serverRequest.bodyToMono(CreateSolicitudRequest.class)
                 .flatMap(request ->
                             Mono.just(objectMapper.map(request, Solicitud.class)))
-                .flatMap(this.transactionalSolicitudUseCase::createSolicitudTransactional)
+                .flatMap(s -> this.transactionalSolicitudUseCase.createSolicitudTransactional(s, authHeader))
                 .flatMap(solicitudCreada ->
                         ServerResponse.created(serverRequest.uri())
                                 .bodyValue(objectMapper.map(solicitudCreada, CreateSolicitudResponse.class))

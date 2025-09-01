@@ -8,9 +8,12 @@ import co.com.crediya.model.tipoprestamo.TipoPrestamo;
 import co.com.crediya.model.tipoprestamo.gateways.TipoPrestamoRepository;
 import co.com.crediya.usecase.composite.SolicitudValidationComposite;
 import co.com.crediya.usecase.exception.EstadoValidationException;
+import co.com.crediya.usecase.exception.SecurityValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import reactor.core.publisher.Mono;
+
+import java.util.Objects;
 
 @RequiredArgsConstructor
 @Log
@@ -19,13 +22,13 @@ public class SolicitudUseCase {
     private final SolicitudRepository solicitudRepository;
     private final EstadoRepository estadoRepository;
     private final TipoPrestamoRepository tipoPrestamoRepository;
-    public Mono<Solicitud> createSolicitud(Solicitud solicitud){
+    public Mono<Solicitud> createSolicitud(Solicitud solicitud, String authHeader) {
         return this.solicitudValidationComposite.validate(solicitud)
                 .doOnError(
                         error -> log.warning("Error en la validacion de la solicitud: " + error.getMessage())
                 )
+                .then((!Objects.equals(solicitud.getEmail(), authHeader)) ? Mono.error(new SecurityValidationException("El email de la solicitud no coincide con el email del usuario autenticado")) : Mono.empty() )
                 .then(Mono.defer(() -> {
-
                     Mono<String> estadoMono = this.estadoRepository.findByNombre("Pendiente de revision")
                             .switchIfEmpty(Mono.defer(() -> {
                                 log.warning("No se encontró el estado 'Pendiente de revision'");

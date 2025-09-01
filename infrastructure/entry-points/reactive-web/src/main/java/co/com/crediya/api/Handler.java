@@ -1,16 +1,13 @@
 package co.com.crediya.api;
 
-import co.com.crediya.api.dto.CreateUsuarioDtoRequest;
-import co.com.crediya.api.dto.CreateUsuarioDtoResponse;
-import co.com.crediya.api.dto.SearchUsuarioResponse;
+import co.com.crediya.api.dto.*;
+import co.com.crediya.model.LoginRequest;
 import co.com.crediya.model.Usuario;
+import co.com.crediya.usecase.login.LoginUseCase;
 import co.com.crediya.usecase.usuario.TransactionalUsuarioUseCase;
 import co.com.crediya.usecase.usuario.UsuarioUseCase;
-import co.com.crediya.usecase.usuario.exception.UsuarioNotFoundException;
-import co.com.crediya.usecase.usuario.exception.UsuarioValidationException;
 import lombok.RequiredArgsConstructor;
 import org.reactivecommons.utils.ObjectMapper;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -25,10 +22,11 @@ public class Handler {
 
     private final TransactionalUsuarioUseCase transactionalUsuarioUseCase;
 
+    private final LoginUseCase loginUseCase;
+
     private final UsuarioUseCase usuarioUseCase;
 
     private final ObjectMapper objectMapper;
-
     public Mono<ServerResponse> listenCreateUsuario(ServerRequest serverRequest) {
         return serverRequest.bodyToMono(CreateUsuarioDtoRequest.class)
                 .flatMap(createUsuarioDtoRequest ->
@@ -42,19 +40,23 @@ public class Handler {
                                 .bodyValue(createUsuarioDtoResponse));
     }
 
-    public Mono<ServerResponse> listenSearchUsuario(ServerRequest serverRequest) {
-        String email = serverRequest.pathVariable("email");
-        return this.usuarioUseCase.searchUsuario(email)
-                .flatMap(confirm ->
+    public Mono<ServerResponse> listenLogin(ServerRequest serverRequest) {
+        return serverRequest.bodyToMono(LoginDtoRequest.class)
+                .flatMap(loginDtoRequest ->
+                        Mono.just(objectMapper.map(loginDtoRequest, LoginRequest.class)))
+                .flatMap(this.loginUseCase::login)
+                .flatMap(loginResponse ->
                         ServerResponse.ok()
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .bodyValue(SearchUsuarioResponse.builder().found(confirm).build()))
-                .onErrorResume(UsuarioNotFoundException.class, error -> ServerResponse.status(HttpStatus.NOT_FOUND)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue(Map.of("error", error.getMessage())))
-                .onErrorResume(UsuarioValidationException.class, error -> ServerResponse.status(HttpStatus.BAD_REQUEST)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue(Map.of("error", error.getMessage())));
+                                .bodyValue(objectMapper.map(loginResponse, LoginDtoResponse.class)));
+    }
+
+    public Mono<ServerResponse> listenUpdateUsuarioToCliente(ServerRequest serverRequest){
+        String email = serverRequest.pathVariable("email");
+        return this.usuarioUseCase.updateUsuarioToCliente(email)
+                .flatMap(usuarioActualizado ->
+                        ServerResponse.ok()
+                                .bodyValue(Map.of("message", String.format("Usuario %s actualizado a CLIENTE", usuarioActualizado.getEmail()))));
     }
 
 }

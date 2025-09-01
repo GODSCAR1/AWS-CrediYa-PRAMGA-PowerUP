@@ -1,7 +1,7 @@
 package co.com.crediya.usecase.usuario.validation;
 
 import co.com.crediya.model.Usuario;
-import co.com.crediya.usecase.usuario.Validator;
+import co.com.crediya.usecase.Validator;
 import co.com.crediya.usecase.usuario.exception.UsuarioValidationException;
 import reactor.core.publisher.Mono;
 

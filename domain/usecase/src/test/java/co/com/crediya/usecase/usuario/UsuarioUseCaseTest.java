@@ -2,6 +2,7 @@ package co.com.crediya.usecase.usuario;
 
 import co.com.crediya.model.Rol;
 import co.com.crediya.model.Usuario;
+import co.com.crediya.model.gateways.PasswordEncoder;
 import co.com.crediya.model.gateways.RolRepository;
 import co.com.crediya.model.gateways.UsuarioRepository;
 import co.com.crediya.usecase.usuario.composite.UsuarioValidationComposite;
@@ -33,6 +34,9 @@ class UsuarioUseCaseTest {
     @Mock
     private RolRepository rolRepository;
 
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
     private Usuario usuario;
 
     @BeforeEach
@@ -42,7 +46,8 @@ class UsuarioUseCaseTest {
                 this.getUsuarioValidationComposite();
 
         // Crear el UseCase con todas sus dependencias
-        usuarioUseCase = new UsuarioUseCase(usuarioRepository, rolRepository, usuarioValidationComposite);
+        usuarioUseCase = new UsuarioUseCase(usuarioRepository, rolRepository, usuarioValidationComposite,
+                passwordEncoder);
 
         usuario = Usuario.builder()
                 .nombre("Oscar")
@@ -312,51 +317,50 @@ class UsuarioUseCaseTest {
         when(this.usuarioRepository.findByDocumentoIdentidad(usuario.getDocumentoIdentidad())).thenReturn(Mono.empty());
         when(this.rolRepository.findByNombre("Solicitante")).thenReturn(Mono.just(rol));
         when(this.usuarioRepository.save(usuario)).thenReturn(Mono.just(usuario));
+        when(this.passwordEncoder.encode(usuario.getContrasena())).thenReturn("contrasena");
         StepVerifier.create(usuarioUseCase.createUsuario(usuario))
-                .assertNext( u -> assertEquals("1",u.getIdRol()))
+                .assertNext( u -> {
+                    assertEquals("1",u.getIdRol());
+                    assertEquals("contrasena",u.getContrasena());
+                })
                 .verifyComplete();
         verify(usuarioRepository).save(any(Usuario.class));
     }
 
     @Test
-    void searchUsuarioMustFailWhenEmailIsNull(){
-        String email = null;
-        StepVerifier.create(usuarioUseCase.searchUsuario(email))
-                .expectErrorMatches(ex ->
-                        ex instanceof UsuarioValidationException
-                                && "El email es obligatorio".equals(ex.getMessage()))
-                .verify();
-        verify(usuarioRepository, never()).findByEmail(any(String.class));
-    }
-
-    @Test
-    void searchUsuarioMustFailWhenEmailIsBlank(){
-        String email = "";
-        StepVerifier.create(usuarioUseCase.searchUsuario(email))
-                .expectErrorMatches(ex ->
-                        ex instanceof UsuarioValidationException
-                                && "El email es obligatorio".equals(ex.getMessage()))
-                .verify();
-        verify(usuarioRepository, never()).findByEmail(any(String.class));
-    }
-
-    @Test
-    void searchUsuarioMustFailWhenUserIsNotFound(){
-        when(this.usuarioRepository.findByEmail(usuario.getEmail())).thenReturn(Mono.empty());
-        StepVerifier.create(usuarioUseCase.searchUsuario(usuario.getEmail()))
+    void updateUsuarioToClientMustFailWhenEmailIsNotFound(){
+        when(this.usuarioRepository.findByEmail(any(String.class))).thenReturn(Mono.empty());
+        when(this.rolRepository.findByNombre(any(String.class))).thenReturn(Mono.just(Rol.builder().build()));
+        StepVerifier.create(usuarioUseCase.updateUsuarioToCliente(usuario.getEmail()))
                 .expectErrorMatches(ex ->
                         ex instanceof UsuarioNotFoundException
                                 && "Usuario no encontrado".equals(ex.getMessage()))
                 .verify();
+        verify(usuarioRepository, never()).save(any(Usuario.class));
     }
 
     @Test
-    void searchUsuarioMustSuccess(){
-        when(this.usuarioRepository.findByEmail(usuario.getEmail())).thenReturn(Mono.just(usuario));
-        StepVerifier.create(usuarioUseCase.searchUsuario(usuario.getEmail()))
-                .assertNext(u -> assertEquals(Boolean.TRUE,u))
-                .verifyComplete();
+    void updateUsuarioToClientMustFailWhenRolIsNotFound(){
+        when(this.usuarioRepository.findByEmail(any(String.class))).thenReturn(Mono.just(Usuario.builder().build()));
+        when(this.rolRepository.findByNombre(any(String.class))).thenReturn(Mono.empty());
+        StepVerifier.create(usuarioUseCase.updateUsuarioToCliente(usuario.getEmail()))
+                .expectErrorMatches(ex ->
+                        ex instanceof RolValidationException
+                                && "Rol no encontrado".equals(ex.getMessage()))
+                .verify();
+        verify(usuarioRepository, never()).save(any(Usuario.class));
     }
 
+    @Test
+    void updateUsuarioToClientMustSuccedWhenEverythingIsOkay(){
+        when(this.usuarioRepository.findByEmail(any(String.class))).thenReturn(Mono.just(Usuario.builder().build()));
+        when(this.rolRepository.findByNombre(any(String.class))).thenReturn(Mono.just(Rol.builder().id("1").build()));
+        when(this.usuarioRepository.save(any(Usuario.class))).thenReturn(Mono.just(Usuario.builder().idRol("1").build()));
+        StepVerifier.create(usuarioUseCase.updateUsuarioToCliente(usuario.getEmail()))
+                .assertNext( u ->
+                    assertEquals("1",u.getIdRol()))
+                .verifyComplete();
+        verify(usuarioRepository).save(any(Usuario.class));
+    }
 
 }

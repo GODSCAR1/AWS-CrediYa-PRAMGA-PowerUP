@@ -1,6 +1,6 @@
 package co.com.crediya.api.config;
 
-import co.com.crediya.usecase.usuario.exception.RolValidationException;
+import co.com.crediya.usecase.login.exception.LoginValidationException;
 import co.com.crediya.usecase.usuario.exception.UsuarioNotFoundException;
 import co.com.crediya.usecase.usuario.exception.UsuarioValidationException;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
@@ -18,7 +18,7 @@ public class GlobalErrorAtributes extends DefaultErrorAttributes {
         Map<String, Object> atributes = super.getErrorAttributes(request, options);
         Throwable error = getError(request);
 
-        if (error instanceof UsuarioValidationException ){
+        if (error instanceof UsuarioValidationException || error instanceof LoginValidationException){
             atributes.put("status", HttpStatus.BAD_REQUEST.value());
             atributes.put("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
             atributes.put("message", error.getMessage());

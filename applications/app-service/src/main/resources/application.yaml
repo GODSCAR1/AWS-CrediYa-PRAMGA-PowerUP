@@ -19,10 +19,22 @@ logging:
   level:
     io.r2dbc.mysql.QUERY: DEBUG # Para ver las queries
     io.r2dbc.mysql.PARAM: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.security.web.server: DEBUG
 cors:
-  allowed-origins: "http://localhost:4200,http://localhost:8080,http://localhost:8081 "
+  allowed-origins: "http://localhost:4200,http://localhost:8080,http://localhost:8081"
 
 routes:
   paths:
+    login: "/api/v1/login"
     createUsuario: "/api/v1/usuario"
-    searchUsuario: "/api/v1/usuario/{email}"
+    updateUsuarioToClient: "/api/v1/usuario/update/{email}"
+
+app:
+  security:
+    bcrypt-strength: ${BCRYPT_STRENGTH:12}
+
+# Configuración JWT (misma que en microservicios)
+jwt:
+  secret: bWlDbGF2ZVNlY3JldGFNdXlMYXJnYVBhcmFKV1RDb25BbE1lbm9zMzJDYXJhY3RlcmVzUGFyYVNlZ3VyaWRhZA==
+  expiration: 86400000  # 24 horas

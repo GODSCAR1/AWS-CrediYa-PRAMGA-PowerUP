@@ -1,4 +1,4 @@
-package co.com.crediya.usecase.usuario;
+package co.com.crediya.usecase;
 
 import reactor.core.publisher.Mono;
 @FunctionalInterface

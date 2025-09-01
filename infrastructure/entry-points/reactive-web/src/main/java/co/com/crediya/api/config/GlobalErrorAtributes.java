@@ -1,7 +1,7 @@
 package co.com.crediya.api.config;
 
-import co.com.crediya.usecase.exception.EmailValidationException;
 import co.com.crediya.usecase.exception.EstadoValidationException;
+import co.com.crediya.usecase.exception.SecurityValidationException;
 import co.com.crediya.usecase.exception.SolicitudValidationException;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
 import org.springframework.boot.web.reactive.error.DefaultErrorAttributes;
@@ -18,13 +18,16 @@ public class GlobalErrorAtributes extends DefaultErrorAttributes {
         Map<String, Object> atributes = super.getErrorAttributes(request, options);
         Throwable error = getError(request);
 
-        if (error instanceof EmailValidationException || error instanceof EstadoValidationException
+        if (error instanceof EstadoValidationException
                 || error instanceof SolicitudValidationException){
             atributes.put("status", HttpStatus.BAD_REQUEST.value());
             atributes.put("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
             atributes.put("message", error.getMessage());
-        }
-        else{
+        } else if (error instanceof SecurityValidationException) {
+            atributes.put("status", HttpStatus.UNAUTHORIZED.value());
+            atributes.put("error", HttpStatus.UNAUTHORIZED.getReasonPhrase());
+            atributes.put("message", error.getMessage());
+        } else{
             atributes.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
             atributes.put("error", HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
             atributes.put("message", "Ocurrio un error inesperado");

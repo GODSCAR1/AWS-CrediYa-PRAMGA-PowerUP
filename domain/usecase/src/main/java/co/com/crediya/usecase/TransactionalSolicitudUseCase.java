@@ -10,9 +10,9 @@ public class TransactionalSolicitudUseCase {
     private final SolicitudUseCase solicitudUseCase;
     private final TransactionPort transactionPort;
 
-    public Mono<Solicitud> createSolicitudTransactional(Solicitud solicitud){
+    public Mono<Solicitud> createSolicitudTransactional(Solicitud solicitud, String authHeader){
         return this.transactionPort.executeInTransaction(
-                this.solicitudUseCase.createSolicitud(solicitud)
+                this.solicitudUseCase.createSolicitud(solicitud, authHeader)
         );
     }
 }

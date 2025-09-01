@@ -8,7 +8,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Setter
 @ConfigurationProperties(prefix = "routes.paths")
 public class AutenticacionPaths {
-    private String createUsuario;
 
-    private String searchUsuario;
+    private String login;
+
+    private String updateUsuarioToClient;
+
+    private String createUsuario;
 }

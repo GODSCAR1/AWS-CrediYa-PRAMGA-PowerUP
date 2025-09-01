@@ -1,6 +1,8 @@
 package co.com.crediya.usecase.usuario;
 
+import co.com.crediya.model.Rol;
 import co.com.crediya.model.Usuario;
+import co.com.crediya.model.gateways.PasswordEncoder;
 import co.com.crediya.model.gateways.RolRepository;
 import co.com.crediya.model.gateways.UsuarioRepository;
 import co.com.crediya.usecase.usuario.composite.UsuarioValidationComposite;
@@ -17,6 +19,8 @@ public class UsuarioUseCase {
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final UsuarioValidationComposite usuarioValidationComposite;
+    private final PasswordEncoder passwordEncoder;
+
     public Mono<Usuario> createUsuario(Usuario usuario){
         return this.usuarioValidationComposite.validate(usuario)
                 .doOnError(
@@ -30,6 +34,7 @@ public class UsuarioUseCase {
                                 }))
                                 .flatMap(rol -> {
                                     usuario.setIdRol(rol.getId());
+                                    usuario.setContrasena(this.passwordEncoder.encode(usuario.getContrasena()));
                                     return this.usuarioRepository.save(usuario);
                                 })
                 ))
@@ -38,15 +43,27 @@ public class UsuarioUseCase {
                 );
     }
 
-    public Mono<Boolean> searchUsuario(String email){
-        if (email == null || email.isBlank()) {
-            return Mono.error(new UsuarioValidationException("El email es obligatorio"));
-        }
-        return this.usuarioRepository.findByEmail(email)
-                .map(u -> true)
-                .switchIfEmpty(Mono.error(new UsuarioNotFoundException("Usuario no encontrado")))
+    public Mono<Usuario> updateUsuarioToCliente(String email){
+        Mono<Usuario> usuarioMono = this.usuarioRepository.findByEmail(email)
+                .switchIfEmpty(Mono.defer(() -> {
+                    log.severe("Usuario no encontrado");
+                    return Mono.error(new UsuarioNotFoundException("Usuario no encontrado"));
+                }));
+        Mono<Rol> rolMono = this.rolRepository.findByNombre("CLIENTE")
+                .switchIfEmpty(Mono.defer(() -> {
+                    log.severe("Rol no encontrado");
+                    return Mono.error(new RolValidationException("Rol no encontrado"));
+                }));
+        return Mono.zip(usuarioMono, rolMono)
+                .flatMap(tuple -> {
+                    Usuario usuario = tuple.getT1();
+                    Rol rol = tuple.getT2();
+                    usuario.setIdRol(rol.getId());
+                    return this.usuarioRepository.save(usuario);
+                })
                 .doOnSuccess(
-                        usuarioEncontrado -> log.info(String.format("Usuario %s encontrado exitosamente", email))
+                        usuarioActualizado -> log.info(String.format("Usuario %s actualizado a Cliente exitosamente", usuarioActualizado.getEmail()))
                 );
     }
+
 }

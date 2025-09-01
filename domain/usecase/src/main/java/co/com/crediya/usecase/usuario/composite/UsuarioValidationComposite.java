@@ -1,7 +1,7 @@
 package co.com.crediya.usecase.usuario.composite;
 
 import co.com.crediya.model.Usuario;
-import co.com.crediya.usecase.usuario.Validator;
+import co.com.crediya.usecase.Validator;
 import co.com.crediya.usecase.usuario.validation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

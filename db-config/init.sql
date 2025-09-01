@@ -29,8 +29,22 @@ CREATE TABLE IF NOT EXISTS usuario(
         FOREIGN KEY (id_rol) REFERENCES rol(id_rol)
 );
 
-INSERT INTO rol(nombre, descripcion)
+INSERT INTO rol(nombre, descripcion)    
 VALUES
-    ('Administrador', 'Administrador del sistema.'),
-    ('Asesor', 'Asesor comercial.'),
-    ('Solicitante', 'Cliente potencial.')
+    ('ADMIN', 'Administrador del sistema.'),
+    ('CLIENTE', 'Cliente del comercio'),
+    ('ASESOR', 'Asesor comercial.'),
+    ('SOLICITANTE', 'Cliente potencial.');
+
+INSERT INTO usuario(nombre, apellido, email, contrasena, documento_identidad, telefono, id_rol, salario_base, fecha_nacimiento)
+VALUES (
+    'Admin',
+    'Sistema',
+    'admin@empresa.com',
+    '$2a$12$UsQQsZNa7disrj8IvO0Wk.KXgANifFlW8SoyHSi1UkKE.9xDVJjXS', 
+    '12345678',
+    '3001234567',
+    (SELECT id_rol FROM rol WHERE nombre = 'ADMIN'),
+    5000000.00,
+    '1980-01-01'
+);

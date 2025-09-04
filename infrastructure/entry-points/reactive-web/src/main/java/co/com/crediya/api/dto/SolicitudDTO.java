@@ -11,8 +11,8 @@ import java.math.BigDecimal;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class CreateSolicitudRequest {
+public class SolicitudDTO {
     private BigDecimal monto;
     private Integer plazo;
-    private String nombreTipoPrestamo;
+    private String email;
 }

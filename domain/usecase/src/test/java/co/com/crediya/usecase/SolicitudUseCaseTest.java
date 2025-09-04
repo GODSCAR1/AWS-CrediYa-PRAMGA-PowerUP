@@ -3,14 +3,17 @@ package co.com.crediya.usecase;
 import co.com.crediya.model.estados.Estado;
 import co.com.crediya.model.estados.gateways.EstadoRepository;
 import co.com.crediya.model.solicitud.Solicitud;
+import co.com.crediya.model.solicitud.SolicitudInfo;
+import co.com.crediya.model.solicitud.gateways.CustomSolicitudRepository;
 import co.com.crediya.model.solicitud.gateways.SolicitudRepository;
 import co.com.crediya.model.tipoprestamo.TipoPrestamo;
 import co.com.crediya.model.tipoprestamo.gateways.TipoPrestamoRepository;
+import co.com.crediya.model.usuario.Usuario;
+import co.com.crediya.model.usuario.gateways.UsuarioConsumer;
 import co.com.crediya.usecase.composite.SolicitudValidationComposite;
 import co.com.crediya.usecase.exception.EstadoValidationException;
 import co.com.crediya.usecase.exception.SecurityValidationException;
 import co.com.crediya.usecase.exception.SolicitudValidationException;
-import co.com.crediya.usecase.validation.EmailValidator;
 import co.com.crediya.usecase.validation.MontoValidator;
 import co.com.crediya.usecase.validation.PlazoValidator;
 import co.com.crediya.usecase.validation.PrestamoValidator;
@@ -18,11 +21,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -35,6 +42,11 @@ class SolicitudUseCaseTest {
     private EstadoRepository estadoRepository;
     @Mock
     private TipoPrestamoRepository tipoPrestamoRepository;
+
+    @Mock
+    private CustomSolicitudRepository customSolicitudRepository;
+    @Mock
+    private UsuarioConsumer usuarioConsumer;
 
     private Solicitud solicitud;
 
@@ -52,7 +64,9 @@ class SolicitudUseCaseTest {
                         solicitudValidationComposite,
                         solicitudRepository,
                         estadoRepository,
-                        tipoPrestamoRepository);
+                        tipoPrestamoRepository,
+                        customSolicitudRepository,
+                        usuarioConsumer);
 
         solicitud = Solicitud.builder()
                 .email("oscar@gmail.com")
@@ -64,7 +78,6 @@ class SolicitudUseCaseTest {
     }
 
     private SolicitudValidationComposite getSolicitudValidationComposite() {
-        EmailValidator emailValidator = new EmailValidator();
         MontoValidator montoValidator = new MontoValidator(tipoPrestamoRepository);
         PlazoValidator plazoValidator = new PlazoValidator();
         PrestamoValidator prestamoValidator = new PrestamoValidator(tipoPrestamoRepository);
@@ -72,8 +85,7 @@ class SolicitudUseCaseTest {
         return new SolicitudValidationComposite(
                 montoValidator,
                 plazoValidator,
-                prestamoValidator,
-                emailValidator
+                prestamoValidator
         );
     }
 
@@ -166,69 +178,6 @@ class SolicitudUseCaseTest {
                 .verify();
         verify(solicitudRepository, never()).save(solicitud);
     }
-    @Test
-    void mustFailWhenEmailIsNull(){
-        solicitud.setEmail(null);
-        TipoPrestamo tipoPrestamo = TipoPrestamo.builder()
-                .id("1")
-                .nombre("Microcredito")
-                .montoMinimo(BigDecimal.valueOf(100000))
-                .montoMaximo(BigDecimal.valueOf(500000))
-                .build();
-        when(tipoPrestamoRepository.findByNombre(anyString()))
-                .thenReturn(Mono.just(
-                        tipoPrestamo
-                ));
-        StepVerifier.create(solicitudUseCase.createSolicitud(solicitud, authHeader))
-                .expectErrorMatches(ex -> ex instanceof SolicitudValidationException
-                        && ex.getMessage().equals("El email es obligatorio"))
-                .verify();
-        verify(solicitudRepository, never()).save(solicitud);
-    }
-
-
-
-    @Test
-    void mustFailWhenEmailIsBlank(){
-        solicitud.setEmail("");
-        TipoPrestamo tipoPrestamo = TipoPrestamo.builder()
-                .id("1")
-                .nombre("Microcredito")
-                .montoMinimo(BigDecimal.valueOf(100000))
-                .montoMaximo(BigDecimal.valueOf(500000))
-                .build();
-        when(tipoPrestamoRepository.findByNombre(anyString()))
-                .thenReturn(Mono.just(
-                        tipoPrestamo
-                ));
-        StepVerifier.create(solicitudUseCase.createSolicitud(solicitud, authHeader))
-                .expectErrorMatches(ex -> ex instanceof SolicitudValidationException
-                        && ex.getMessage().equals("El email es obligatorio"))
-                .verify();
-        verify(solicitudRepository, never()).save(solicitud);
-    }
-
-    @Test
-    void mustFailWhenEmailIsNotValid(){
-        authHeader = "oscar31@gmail.com";
-        TipoPrestamo tipoPrestamo = TipoPrestamo.builder()
-                .id("1")
-                .nombre("Microcredito")
-                .montoMinimo(BigDecimal.valueOf(100000))
-                .montoMaximo(BigDecimal.valueOf(500000))
-                .build();
-        when(tipoPrestamoRepository.findByNombre(anyString()))
-                .thenReturn(Mono.just(
-                        tipoPrestamo
-                ));
-
-        StepVerifier.create(solicitudUseCase.createSolicitud(solicitud, authHeader))
-                .expectErrorMatches(ex -> ex instanceof SecurityValidationException
-                        && ex.getMessage().equals("El email de la solicitud no coincide con el email del usuario autenticado"))
-                .verify();
-
-        verify(solicitudRepository, never()).save(solicitud);
-    }
 
     @Test
     void mustFailWhenEstadoIsNotFound(){
@@ -287,7 +236,119 @@ class SolicitudUseCaseTest {
         verify(solicitudRepository).save(solicitud);
     }
 
+    @Test
+    void testGetSolicitudPagedMustSuccessWithMultipleSolicitudesAndUsers() {
+        // Arrange
+        String nombreEstado = "Pendiente de revision";
+        int page = 0;
+        int size = 10;
+        String sortBy = "monto";
+        String sortDirection = "DESC";
+        Long totalCount = 3L;
 
+        // Crear solicitudes de prueba (algunas con el mismo email)
+        List<SolicitudInfo> mockSolicitudes = Arrays.asList(
+                SolicitudInfo.builder()
+                        .email("juan@email.com")
+                        .monto(new BigDecimal("1000000"))
+                        .build(),
+                SolicitudInfo.builder()
+                        .email("juan@email.com")
+                        .monto(new BigDecimal("500000"))
+                        .build(),
+                SolicitudInfo.builder()
+                        .email("maria@email.com")
+                        .monto(new BigDecimal("2000000"))
+                        .build()
+        );
+
+        // Crear usuarios de prueba
+        List<Usuario> mockUsuarios = Arrays.asList(
+                Usuario.builder()
+                        .email("juan@email.com")
+                        .nombre("Juan")
+                        .salarioBase(new BigDecimal("3000000"))
+                        .build(),
+                Usuario.builder()
+                        .email("maria@email.com")
+                        .nombre("María")
+                        .salarioBase(new BigDecimal("5000000"))
+                        .build()
+        );
+
+        List<String> expectedEmails = Arrays.asList("juan@email.com", "maria@email.com");
+
+        // Mock de los repositorios
+        when(customSolicitudRepository.countByNombreEstado(nombreEstado))
+                .thenReturn(Mono.just(totalCount));
+        when(customSolicitudRepository.findByAllByEstado(nombreEstado, page, size, sortBy, sortDirection))
+                .thenReturn(Flux.fromIterable(mockSolicitudes));
+        when(usuarioConsumer.getUsuariosByEmails(anyList()))
+                .thenReturn(Flux.fromIterable(mockUsuarios));
+
+        // Act & Assert
+        StepVerifier.create(solicitudUseCase.getSolicitudPaged(nombreEstado, page, size, sortBy, sortDirection))
+                .expectNextMatches(result -> {
+                    // Verificar estructura de PagedSolicitud
+                    assertEquals(3, result.getContent().size());
+                    assertEquals(page, result.getPageNumber());
+                    assertEquals(size, result.getPageSize());
+                    assertEquals(totalCount, result.getTotalElements());
+                    assertEquals(1, result.getTotalPages());
+                    assertTrue(result.isFirst());
+                    assertTrue(result.isLast());
+
+                    // Verificar que las solicitudes están enriquecidas
+                    SolicitudInfo solicitud1 = result.getContent().get(0);
+                    assertNotNull(solicitud1.getNombre());
+                    assertEquals("Juan", solicitud1.getNombre());
+                    assertEquals("juan@email.com", solicitud1.getEmail());
+                    assertEquals(new BigDecimal("3000000"), solicitud1.getSalarioBase());
+
+                    SolicitudInfo solicitud2 = result.getContent().get(1);
+                    assertNotNull(solicitud2.getNombre());
+                    assertEquals("Juan", solicitud2.getNombre());
+                    assertEquals("juan@email.com", solicitud2.getEmail());
+                    assertEquals(new BigDecimal("3000000"), solicitud1.getSalarioBase());
+
+                    SolicitudInfo solicitud3 = result.getContent().get(2);
+                    assertNotNull(solicitud3.getNombre());
+                    assertEquals("María", solicitud3.getNombre());
+                    assertEquals(new BigDecimal("5000000"), solicitud3.getSalarioBase());
+                    assertEquals("maria@email.com", solicitud3.getEmail());
+
+                    return true;
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void testGetSolicitudPagedMustSuccessWithNoSolicitudes() {
+        String nombreEstado = "Pendiente de revision";
+        int page = 0;
+        int size = 10;
+        String sortBy = "monto";
+        String sortDirection = "DESC";
+        Long totalCount = 0L;
+
+        when(customSolicitudRepository.countByNombreEstado(nombreEstado))
+                .thenReturn(Mono.just(0L));
+        when(customSolicitudRepository.findByAllByEstado(nombreEstado, page, size, sortBy, sortDirection))
+                .thenReturn(Flux.empty());
+
+        StepVerifier.create(solicitudUseCase.getSolicitudPaged(nombreEstado, page, size, sortBy, sortDirection))
+                .expectNextMatches(result -> {
+                    // Verificar estructura de PagedSolicitud
+                    assertEquals(0, result.getContent().size());
+                    assertEquals(page, result.getPageNumber());
+                    assertEquals(size, result.getPageSize());
+                    assertEquals(totalCount, result.getTotalElements());
+                    assertEquals(0, result.getTotalPages());
+                    assertTrue(result.isFirst());
+                    assertTrue(result.isLast());
+                    return true;
+                }).verifyComplete();
+    }
 
 
 }

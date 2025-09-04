@@ -2,7 +2,6 @@ package co.com.crediya.usecase.composite;
 
 import co.com.crediya.model.solicitud.Solicitud;
 import co.com.crediya.usecase.Validator;
-import co.com.crediya.usecase.validation.EmailValidator;
 import co.com.crediya.usecase.validation.MontoValidator;
 import co.com.crediya.usecase.validation.PlazoValidator;
 import co.com.crediya.usecase.validation.PrestamoValidator;
@@ -20,14 +19,13 @@ public class SolicitudValidationComposite implements Validator<Solicitud> {
     public SolicitudValidationComposite(
             MontoValidator montoValidator,
             PlazoValidator plazoValidator,
-            PrestamoValidator prestamoValidator,
-            EmailValidator emailValidator
+            PrestamoValidator prestamoValidator
     ) {
         this.validator = Arrays.asList(
                 montoValidator,
                 plazoValidator,
-                prestamoValidator,
-                emailValidator);
+                prestamoValidator
+                );
     }
     @Override
     public Mono<Void> validate(Solicitud solicitud) {

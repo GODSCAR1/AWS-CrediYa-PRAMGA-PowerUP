@@ -12,7 +12,7 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("Crediya API")
-                        .description("API para gestión de solicitudes de Crediya")
+                        .description("API para gestion de solicitudes de Crediya")
                         .version("1.0.0"));
     }
 }

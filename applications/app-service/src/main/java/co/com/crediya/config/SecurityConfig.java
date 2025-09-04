@@ -3,6 +3,7 @@ package co.com.crediya.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -34,11 +35,15 @@ public class SecurityConfig {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .addFilterAt(gatewayHeaderAuthFilter, SecurityWebFiltersOrder.AUTHENTICATION)
+                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
+                .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
                 .authorizeExchange(auth -> auth
                         // públicos reales
-                        .pathMatchers("/actuator/health", "/public/**").permitAll()
-                        // todo lo demás requiere estar autenticado (los roles los controlas con @PreAuthorize)
-                        .pathMatchers("/api/v1/solicitud").hasRole("CLIENTE")
+                        .pathMatchers("/actuator/health", "/public/**","/swagger-ui/**",
+                                "/v3/api-docs/**").permitAll()
+                        .pathMatchers(HttpMethod.POST,"/api/v1/solicitud").hasRole("CLIENTE")
+                        .pathMatchers(HttpMethod.GET,"/api/v1/solicitud").hasRole("ASESOR")
+                        .pathMatchers(HttpMethod.GET,"/api/v1/solicitud/{nombreEstado}").hasRole("ASESOR")
                         .anyExchange().authenticated()
                 )
                 .build();

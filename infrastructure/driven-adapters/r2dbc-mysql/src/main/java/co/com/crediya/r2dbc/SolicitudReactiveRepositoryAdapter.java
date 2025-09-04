@@ -1,12 +1,18 @@
 package co.com.crediya.r2dbc;
 
+import co.com.crediya.model.solicitud.PagedSolicitud;
 import co.com.crediya.model.solicitud.Solicitud;
 import co.com.crediya.model.solicitud.gateways.SolicitudRepository;
 import co.com.crediya.r2dbc.entity.SolicitudEntity;
 import co.com.crediya.r2dbc.helper.ReactiveAdapterOperations;
 import org.reactivecommons.utils.ObjectMapper;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 @Repository
 public class SolicitudReactiveRepositoryAdapter extends ReactiveAdapterOperations<
@@ -28,5 +34,8 @@ public class SolicitudReactiveRepositoryAdapter extends ReactiveAdapterOperation
     public Mono<Solicitud> save(Solicitud solicitud) {
         return super.save(solicitud);
     }
+
+
+
 
 }

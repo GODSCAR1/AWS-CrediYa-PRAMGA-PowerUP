@@ -2,7 +2,9 @@ package co.com.crediya.api;
 
 import co.com.crediya.api.config.SolicitudesPaths;
 import co.com.crediya.api.dto.CreateSolicitudRequest;
+import co.com.crediya.api.dto.PagedResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
@@ -61,9 +63,52 @@ public class RouterRest {
                     ),
                     path = "/api/v1/solicitud",
                     method = RequestMethod.POST
+            ),
+            @RouterOperation(
+                    operation = @Operation(
+                            operationId = "getSolicitudes",
+                            summary = "Obtener solicitudes paginadas",
+                            description = "Obtiene una lista paginada de solicitudes que requieren revision manual",
+                            tags = {"Solicitudes"},
+                            parameters = {
+                                    @Parameter(
+                                            name = "page",
+                                            description = "Número de página (por defecto 0)",
+                                            required = false
+                                    ),
+                                    @Parameter(
+                                            name = "size",
+                                            description = "Tamaño de página (por defecto 20)",
+                                            required = false
+                                    ),
+                                    @Parameter(
+                                            name = "sortBy",
+                                            description = "Campo para ordenar (por defecto 'monto')",
+                                            required = false
+                                    ),
+                                    @Parameter(
+                                            name = "sortDirection",
+                                            description = "Dirección de ordenamiento ('asc' o 'desc', por defecto 'desc')",
+                                            required = false
+                                    )
+                            },
+                            responses = {
+                                    @ApiResponse(
+                                            responseCode = "200",
+                                            description = "Lista de solicitudes paginadas",
+                                            content = @Content(
+                                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                                    schema = @Schema(implementation = PagedResponseDTO.class)
+                                            )
+                                    )
+                            }
+                    ),
+                    path = "/api/v1/solicitud/{nombreEstado}",
+                    method = RequestMethod.GET
             )
     })
     public RouterFunction<ServerResponse> routerFunction(Handler handler) {
-        return route(POST(solicitudesPaths.getCreateSolicitud()), solicitudesHandler::listenCreateSolicitud);
+        return route(POST(solicitudesPaths.getCreateSolicitud()), solicitudesHandler::listenCreateSolicitud)
+                .andRoute(GET(solicitudesPaths.getGetSolicitudes()), solicitudesHandler::obtenerSolicitudes);
     }
 }

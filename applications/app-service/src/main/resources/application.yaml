@@ -1,64 +1,26 @@
 server:
-  port: 8081
+  port: "${SERVER_PORT:8081}"
 spring:
   application:
-    name: "SOLICITUDES"
+    name: "${SPRING_APPLICATION_NAME:SOLICITUDES}"
   devtools:
-    add-properties: false
-  h2:
-    console:
-      enabled: true
-      path: "/h2"
-  profiles:
-    include: null
-adapter:
-  restconsumer:
-    timeout: 5000
-    url: "http://localhost:8080"
+    add-properties: "${SPRING_DEVTOOLS_ADD_PROPERTIES:false}"
 adapters:
   r2dbc:
-    type: "mysql"
-    host: "127.0.0.1"
-    port: 3308
-    database: "solicitudes"
-    username: "appuser"
-    password: "app_pass_123"
-management:
-  health:
-    circuitbreakers:
-      enabled: true
-  endpoints:
-    web:
-      exposure:
-        include: "health,prometheus"
-  endpoint:
-    health:
-      probes:
-        enabled: true
-resilience4j:
-  circuitbreaker:
-    instances:
-      testGet:
-        registerHealthIndicator: true
-        failureRateThreshold: 50
-        slowCallRateThreshold: 50
-        slowCallDurationThreshold: "2s"
-        permittedNumberOfCallsInHalfOpenState: 3
-        slidingWindowSize: 10
-        minimumNumberOfCalls: 10
-        waitDurationInOpenState: "10s"
-      testPost:
-        registerHealthIndicator: true
-        failureRateThreshold: 50
-        slowCallRateThreshold: 50
-        slowCallDurationThreshold: "2s"
-        permittedNumberOfCallsInHalfOpenState: 3
-        slidingWindowSize: 10
-        minimumNumberOfCalls: 10
-        waitDurationInOpenState: "10s"
+    host: "${R2DBC_HOST:127.0.0.1}"
+    port: "${R2DBC_PORT:3308}"
+    database: "${R2DBC_DATABASE:solicitudes}"
+    username: "${R2DBC_USERNAME:appuser}"
+    password: "${R2DBC_PASSWORD:app_pass_123}"
 cors:
-  allowed-origins: "http://localhost:4200,http://localhost:8081"
-
+  allowed-origins: "${CORS_ALLOWED_ORIGINS:http://localhost:8083}"
 routes:
   paths:
-    createSolicitud: "/api/v1/solicitud"
+    createSolicitud: "${ROUTES_CREATE_SOLICITUD:/api/v1/solicitud}"
+    getSolicitudes: "${ROUTES_GET_SOLICITUDES:/api/v1/solicitud/{nombreEstado}}"
+adapter:
+  restconsumer:
+    timeout: 10000
+    url: "${ADAPTER_RESTCONSUMER_URL:http://localhost:8080}"
+    usuario:
+      searchEndpoint: "${ADAPTER_RESTCONSUMER_USUARIO_SEARCH_ENDPOINT:/api/v1/usuario/emails}"

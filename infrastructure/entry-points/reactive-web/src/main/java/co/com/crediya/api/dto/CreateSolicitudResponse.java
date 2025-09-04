@@ -14,4 +14,5 @@ public class CreateSolicitudResponse {
     private BigDecimal monto;
     private Integer plazo;
     private String email;
+    private String nombreTipoPrestamo;
 }

@@ -2,7 +2,7 @@ package co.com.crediya.jwttoken;
 
 import co.com.crediya.model.Rol;
 import co.com.crediya.model.Usuario;
-import co.com.crediya.model.gateways.JwtTokenGenerator;
+import co.com.crediya.model.gateways.TokenGenerator;
 import co.com.crediya.model.gateways.RolRepository;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -19,7 +19,7 @@ import java.util.Date;
 @RequiredArgsConstructor
 @Component
 @Log
-public class JwtTokenGeneratorAdapter implements JwtTokenGenerator {
+public class JwtTokenGeneratorAdapter implements TokenGenerator {
 
     @Value("${jwt.secret}")
     private String jwtSecret;

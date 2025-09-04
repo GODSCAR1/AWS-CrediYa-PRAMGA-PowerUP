@@ -33,8 +33,7 @@ INSERT INTO rol(nombre, descripcion)
 VALUES
     ('ADMIN', 'Administrador del sistema.'),
     ('CLIENTE', 'Cliente del comercio'),
-    ('ASESOR', 'Asesor comercial.'),
-    ('SOLICITANTE', 'Cliente potencial.');
+    ('ASESOR', 'Asesor comercial.');
 
 INSERT INTO usuario(nombre, apellido, email, contrasena, documento_identidad, telefono, id_rol, salario_base, fecha_nacimiento)
 VALUES (
@@ -47,4 +46,17 @@ VALUES (
     (SELECT id_rol FROM rol WHERE nombre = 'ADMIN'),
     5000000.00,
     '1980-01-01'
+);
+
+INSERT INTO usuario(nombre, apellido, email, contrasena, documento_identidad, telefono, id_rol, salario_base, fecha_nacimiento)
+VALUES (
+    'Asesor',
+    'Sistema',
+    'asesor@empresa.com',
+    '$2a$12$UsQQsZNa7disrj8IvO0Wk.KXgANifFlW8SoyHSi1UkKE.9xDVJjXS', 
+    '12345679',
+    '3001234568',
+    (SELECT id_rol FROM rol WHERE nombre = 'ASESOR'),
+    5000000.00,
+    '1980-01-02'
 );

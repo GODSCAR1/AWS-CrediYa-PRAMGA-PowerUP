@@ -14,7 +14,6 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
-import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -40,6 +39,15 @@ public class Handler {
                                 .bodyValue(createUsuarioDtoResponse));
     }
 
+    public Mono<ServerResponse> listenSearchUsuariosByEmails(ServerRequest serverRequest) {
+        return ServerResponse.ok()
+                .contentType(MediaType.APPLICATION_NDJSON)  // ← NDJSON streaming
+                .body(serverRequest.bodyToMono(UsuarioEmailRequest.class)
+                                .flatMapMany(req -> usuarioUseCase.getAllUsuariosByEmails(req.getEmails()))
+                                .map(usuario -> objectMapper.map(usuario, UsuarioEmailResponse.class)),
+                        UsuarioEmailResponse.class);
+    }
+
     public Mono<ServerResponse> listenLogin(ServerRequest serverRequest) {
         return serverRequest.bodyToMono(LoginDtoRequest.class)
                 .flatMap(loginDtoRequest ->
@@ -49,14 +57,6 @@ public class Handler {
                         ServerResponse.ok()
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .bodyValue(objectMapper.map(loginResponse, LoginDtoResponse.class)));
-    }
-
-    public Mono<ServerResponse> listenUpdateUsuarioToCliente(ServerRequest serverRequest){
-        String email = serverRequest.pathVariable("email");
-        return this.usuarioUseCase.updateUsuarioToCliente(email)
-                .flatMap(usuarioActualizado ->
-                        ServerResponse.ok()
-                                .bodyValue(Map.of("message", String.format("Usuario %s actualizado a CLIENTE", usuarioActualizado.getEmail()))));
     }
 
 }

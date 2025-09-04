@@ -1,10 +1,7 @@
 package co.com.crediya.api;
 
 import co.com.crediya.api.config.AutenticacionPaths;
-import co.com.crediya.api.dto.CreateUsuarioDtoRequest;
-import co.com.crediya.api.dto.CreateUsuarioDtoResponse;
-import co.com.crediya.api.dto.LoginDtoRequest;
-import co.com.crediya.api.dto.SearchUsuarioResponse;
+import co.com.crediya.api.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -63,78 +60,78 @@ public class RouterRest {
                     path = "/api/v1/usuario",
                     method = RequestMethod.POST
             ),
-    @RouterOperation(
-            operation = @Operation(
-                    operationId = "updateUsuarioToClient",
-                    summary = "Le asigna el rol de cliente al usuario",
-                    description = "Busca un usuario por email y lo actualiza",
-                    tags = {"Usuarios"},
-                    parameters = {
-                            @Parameter(
-                                    name = "email",
-                                    description = "Email del usuario",
+            @RouterOperation(
+                    operation = @Operation(
+                            operationId = "getAllUsuariosByEmails",
+                            summary = "Obtener usuarios por emails",
+                            description = "Obtiene una lista de usuarios basados en una lista de emails proporcionada",
+                            tags = {"Usuarios"},
+                            requestBody = @RequestBody(
                                     required = true,
-                                    example = "example@gmail.com",
-                                    schema = @Schema(type = "string")
-                            )
-                    },
-                    responses = {
-                            @ApiResponse(
-                                    responseCode = "200",
-                                    description = "Usuario actualizado",
+                                    description = "Lista de emails para buscar usuarios",
                                     content = @Content(
-                                            mediaType = MediaType.APPLICATION_JSON_VALUE
+                                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                            schema = @Schema(implementation = UsuarioEmailRequest.class)
                                     )
                             ),
-                            @ApiResponse(
-                                    responseCode = "404",
-                                    description = "Usuario no encontrado"
-                            )
-                    }
-            ),
-            path = "/api/v1/usuario/update/{email}",
-            method = RequestMethod.PUT
-        ),
-    @RouterOperation(
-            operation = @Operation(
-                    operationId = "login",
-                    summary = "Login de usuario",
-                    description = "Autentica a un usuario y devuelve un token JWT si las credenciales son correctas",
-                    tags = {"Autenticación"},
-                    requestBody = @RequestBody(
-                            required = true,
-                            description = "Credenciales de login",
-                            content = @Content(
-                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = LoginDtoRequest.class)
-                            )
+                            responses = {
+                                    @ApiResponse(
+                                            responseCode = "200",
+                                            description = "Usuarios encontrados exitosamente",
+                                            content = @Content(
+                                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                                    schema = @Schema(implementation = UsuarioEmailResponse.class)
+                                            )
+                                    ),
+                                    @ApiResponse(
+                                            responseCode = "400",
+                                            description = "Error en la validacion de datos"
+                                    )
+                            }
                     ),
-                    responses = {
-                            @ApiResponse(
-                                    responseCode = "200",
-                                    description = "Login exitoso, token JWT generado",
+                    path = "/api/v1/usuario/emails",
+                    method = RequestMethod.POST
+            ),
+            @RouterOperation(
+                    operation = @Operation(
+                            operationId = "login",
+                            summary = "Login de usuario",
+                            description = "Autentica a un usuario y devuelve un token JWT si las credenciales son correctas",
+                            tags = {"Autenticación"},
+                            requestBody = @RequestBody(
+                                    required = true,
+                                    description = "Credenciales de login",
                                     content = @Content(
                                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                                             schema = @Schema(implementation = LoginDtoRequest.class)
                                     )
                             ),
-                            @ApiResponse(
-                                    responseCode = "401",
-                                    description = "Credenciales incorrectas"
-                            ),
-                            @ApiResponse(
-                                    responseCode = "400",
-                                    description = "Error en la validacion de datos"
-                            )
-                    }
-            ),
-            path = "/api/v1/login",
-            method = RequestMethod.POST
-    )
+                            responses = {
+                                    @ApiResponse(
+                                            responseCode = "200",
+                                            description = "Login exitoso, token JWT generado",
+                                            content = @Content(
+                                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                                    schema = @Schema(implementation = LoginDtoRequest.class)
+                                            )
+                                    ),
+                                    @ApiResponse(
+                                            responseCode = "401",
+                                            description = "Credenciales incorrectas"
+                                    ),
+                                    @ApiResponse(
+                                            responseCode = "400",
+                                            description = "Error en la validacion de datos"
+                                    )
+                            }
+                    ),
+                    path = "/api/v1/login",
+                    method = RequestMethod.POST
+            )
     })
     public RouterFunction<ServerResponse> routerFunction(Handler handler) {
         return route(POST(autenticacionPaths.getCreateUsuario()), userHandler::listenCreateUsuario)
-                .andRoute(PUT(autenticacionPaths.getUpdateUsuarioToClient()), userHandler::listenUpdateUsuarioToCliente)
+                .andRoute(POST(autenticacionPaths.getSearchUsuarioByEmails()), userHandler::listenSearchUsuariosByEmails)
                 .andRoute(POST(autenticacionPaths.getLogin()), userHandler::listenLogin);
     }
 

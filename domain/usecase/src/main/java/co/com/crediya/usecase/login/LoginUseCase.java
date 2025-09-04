@@ -2,7 +2,7 @@ package co.com.crediya.usecase.login;
 
 import co.com.crediya.model.LoginRequest;
 import co.com.crediya.model.LoginResponse;
-import co.com.crediya.model.gateways.JwtTokenGenerator;
+import co.com.crediya.model.gateways.TokenGenerator;
 import co.com.crediya.model.gateways.PasswordEncoder;
 import co.com.crediya.model.gateways.UsuarioRepository;
 import co.com.crediya.usecase.login.composite.LoginValidationComposite;
@@ -18,7 +18,7 @@ public class LoginUseCase {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtTokenGenerator jwtTokenGenerator;
+    private final TokenGenerator tokenGenerator;
     private final LoginValidationComposite loginValidationComposite;
 
     public Mono<LoginResponse> login(LoginRequest loginRequest) {
@@ -36,7 +36,7 @@ public class LoginUseCase {
                                 if(!passwordEncoder.matches(loginRequest.getContrasena(), usuario.getContrasena())) {
                                     return Mono.error(new LoginValidationException("Credenciales incorrectas"));
                                 }
-                                return this.jwtTokenGenerator.generateToken(usuario)
+                                return this.tokenGenerator.generateToken(usuario)
                                         .map(token -> LoginResponse.builder().token(token).build());
                             })
                 ))

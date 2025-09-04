@@ -6,7 +6,10 @@ import co.com.crediya.r2dbc.entity.UsuarioEntity;
 import co.com.crediya.r2dbc.helper.ReactiveAdapterOperations;
 import org.reactivecommons.utils.ObjectMapper;
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 @Repository
 public class UsuarioReactiveRepositoryAdapter extends ReactiveAdapterOperations<
@@ -37,5 +40,10 @@ public class UsuarioReactiveRepositoryAdapter extends ReactiveAdapterOperations<
     @Override
     public Mono<Usuario> findByDocumentoIdentidad(String documentoIdentidad){
         return repository.findByDocumentoIdentidad(documentoIdentidad).map(this::toEntity);
+    }
+
+    @Override
+    public Flux<Usuario> findAllByEmail(List<String> emails){
+        return repository.findAllByEmailIn(emails).map(this::toEntity);
     }
 }

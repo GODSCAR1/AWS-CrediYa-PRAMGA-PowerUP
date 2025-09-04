@@ -12,7 +12,11 @@ import co.com.crediya.usecase.usuario.exception.UsuarioValidationException;
 import co.com.crediya.usecase.usuario.validation.EmailValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
+
 @RequiredArgsConstructor
 @Log
 public class UsuarioUseCase {
@@ -27,7 +31,7 @@ public class UsuarioUseCase {
                         error -> log.severe(String.format("Error de validacion: %s",  error.getMessage()))
                 )
                 .then(Mono.defer(() ->
-                        this.rolRepository.findByNombre("Solicitante")
+                        this.rolRepository.findByNombre("CLIENTE")
                                 .switchIfEmpty(Mono.defer(() -> {
                                     log.severe("Rol no encontrado");
                                     return Mono.error(new RolValidationException("Rol no encontrado"));
@@ -43,27 +47,13 @@ public class UsuarioUseCase {
                 );
     }
 
-    public Mono<Usuario> updateUsuarioToCliente(String email){
-        Mono<Usuario> usuarioMono = this.usuarioRepository.findByEmail(email)
+    public Flux<Usuario> getAllUsuariosByEmails(List<String> emails){
+        return this.usuarioRepository.findAllByEmail(emails)
                 .switchIfEmpty(Mono.defer(() -> {
-                    log.severe("Usuario no encontrado");
-                    return Mono.error(new UsuarioNotFoundException("Usuario no encontrado"));
-                }));
-        Mono<Rol> rolMono = this.rolRepository.findByNombre("CLIENTE")
-                .switchIfEmpty(Mono.defer(() -> {
-                    log.severe("Rol no encontrado");
-                    return Mono.error(new RolValidationException("Rol no encontrado"));
-                }));
-        return Mono.zip(usuarioMono, rolMono)
-                .flatMap(tuple -> {
-                    Usuario usuario = tuple.getT1();
-                    Rol rol = tuple.getT2();
-                    usuario.setIdRol(rol.getId());
-                    return this.usuarioRepository.save(usuario);
-                })
-                .doOnSuccess(
-                        usuarioActualizado -> log.info(String.format("Usuario %s actualizado a Cliente exitosamente", usuarioActualizado.getEmail()))
-                );
+                    log.severe("No se encontraron usuarios");
+                    return Mono.error(new UsuarioNotFoundException("No se encontraron usuarios"));
+                }))
+                .doOnComplete(() -> log.info("Usuarios obtenidos exitosamente"));
     }
 
 }

@@ -2,7 +2,7 @@ package co.com.crediya.usecase.login;
 
 import co.com.crediya.model.LoginRequest;
 import co.com.crediya.model.Usuario;
-import co.com.crediya.model.gateways.JwtTokenGenerator;
+import co.com.crediya.model.gateways.TokenGenerator;
 import co.com.crediya.model.gateways.PasswordEncoder;
 import co.com.crediya.model.gateways.UsuarioRepository;
 import co.com.crediya.usecase.login.composite.LoginValidationComposite;
@@ -27,7 +27,7 @@ class LoginUseCaseTest {
     @Mock
     private PasswordEncoder passwordEncoder;
     @Mock
-    private JwtTokenGenerator jwtTokenGenerator;
+    private TokenGenerator tokenGenerator;
 
     private LoginRequest loginRequest;
 
@@ -42,7 +42,7 @@ class LoginUseCaseTest {
         loginUseCase = new LoginUseCase(
                 usuarioRepository,
                 passwordEncoder,
-                jwtTokenGenerator,
+                tokenGenerator,
                 loginValidationComposite);
 
         loginRequest = LoginRequest.builder()
@@ -124,7 +124,7 @@ class LoginUseCaseTest {
     void mustGenerateTokenWhenLoginIsSuccess(){
         when(this.usuarioRepository.findByEmail(loginRequest.getEmail())).thenReturn(Mono.just(Usuario.builder().contrasena("hashed").build()));
         when(this.passwordEncoder.matches(loginRequest.getContrasena(),"hashed")).thenReturn(true);
-        when(this.jwtTokenGenerator.generateToken(any(Usuario.class))).thenReturn(Mono.just("token"));
+        when(this.tokenGenerator.generateToken(any(Usuario.class))).thenReturn(Mono.just("token"));
         StepVerifier.create(loginUseCase.login(loginRequest))
                 .assertNext( u ->
                         assertEquals("token",u.getToken()))

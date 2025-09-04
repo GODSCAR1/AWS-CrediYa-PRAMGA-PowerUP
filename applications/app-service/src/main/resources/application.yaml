@@ -1,40 +1,46 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
+
 spring:
   application:
-    name: "AUTENTICACION"
+    name: ${SPRING_APPLICATION_NAME:AUTENTICACION}
   devtools:
-    add-properties: false
-  profiles:
-    include: null
+    add-properties: ${SPRING_DEVTOOLS_ADD_PROPERTIES:false}
 adapters:
   r2dbc:
-    type: "mysql"
-    host: "127.0.0.1"
-    port: 3307
-    database: "autenticacion"
-    username: "appuser"
-    password: "app_pass_123"
-logging:
-  level:
-    io.r2dbc.mysql.QUERY: DEBUG # Para ver las queries
-    io.r2dbc.mysql.PARAM: DEBUG
-    org.springframework.security: DEBUG
-    org.springframework.security.web.server: DEBUG
+    host: ${R2DBC_HOST:127.0.0.1}
+    port: ${R2DBC_PORT:3307}
+    database: ${R2DBC_DATABASE:autenticacion}
+    username: ${R2DBC_USERNAME:appuser}
+    password: ${R2DBC_PASSWORD:app_pass_123}
+
 cors:
-  allowed-origins: "http://localhost:4200,http://localhost:8080,http://localhost:8081"
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:8083, http://localhost:8080}
 
 routes:
   paths:
-    login: "/api/v1/login"
-    createUsuario: "/api/v1/usuario"
-    updateUsuarioToClient: "/api/v1/usuario/update/{email}"
-
+    login: ${ROUTES_LOGIN_PATH:/api/v1/login}
+    createUsuario: ${ROUTES_CREATE_USUARIO_PATH:/api/v1/usuario}
+    searchUsuarioByEmails: ${ROUTES_SEARCH_USUARIO_BY_EMAILS_PATH:/api/v1/usuario/emails}
 app:
   security:
     bcrypt-strength: ${BCRYPT_STRENGTH:12}
 
 # Configuración JWT (misma que en microservicios)
 jwt:
-  secret: bWlDbGF2ZVNlY3JldGFNdXlMYXJnYVBhcmFKV1RDb25BbE1lbm9zMzJDYXJhY3RlcmVzUGFyYVNlZ3VyaWRhZA==
-  expiration: 86400000  # 24 horas
+  secret: ${JWT_SECRET:bWlDbGF2ZVNlY3JldGFNdXlMYXJnYVBhcmFKV1RDb25BbE1lbm9zMzJDYXJhY3RlcmVzUGFyYVNlZ3VyaWRhZA==}
+  expiration: ${JWT_EXPIRATION:86400000}
+
+logging:
+  level:
+    # Logs generales de Spring Security
+    org.springframework.security: DEBUG
+
+    # Logs específicos de autenticación
+    org.springframework.security.authentication: DEBUG
+
+    # Logs de autorización
+    org.springframework.security.access: DEBUG
+
+    # Logs de filtros de seguridad
+    org.springframework.security.web: DEBUG

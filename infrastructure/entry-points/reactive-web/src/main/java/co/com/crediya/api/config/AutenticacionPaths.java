@@ -11,7 +11,7 @@ public class AutenticacionPaths {
 
     private String login;
 
-    private String updateUsuarioToClient;
-
     private String createUsuario;
+
+    private String searchUsuarioByEmails;
 }

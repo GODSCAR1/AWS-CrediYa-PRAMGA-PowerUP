@@ -19,6 +19,8 @@ import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Configuration
@@ -27,6 +29,11 @@ import java.util.stream.Collectors;
 public class SecurityConfig {
     public static final String H_X_USER_EMAIL = "X-User-Email";
     public static final String H_X_USER_ROLE  = "X-User-Role";
+    public static final String H_X_SERVICE_NAME = "X-Service-Name";
+
+    private static final Set<String> ALLOWED_SERVICES = Set.of(
+            "solicitudes-service"
+    );
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
@@ -34,12 +41,16 @@ public class SecurityConfig {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .addFilterAt(gatewayHeaderAuthFilter, SecurityWebFiltersOrder.AUTHENTICATION)
+                .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
+                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .authorizeExchange(auth -> auth
                         // públicos reales
-                        .pathMatchers("/actuator/health", "/public/**", "/api/v1/login").permitAll()
-                        // todo lo demás requiere estar autenticado (los roles los controlas con @PreAuthorize)
+                        .pathMatchers("/actuator/health", "/public/**", "/api/v1/login",
+                                "/swagger-ui/**","/v3/api-docs/**").permitAll()
+                        // endpoints privados
                         .pathMatchers("/api/v1/usuario").hasAnyRole("ADMIN", "ASESOR")
                         .pathMatchers("/api/v1/usuario/update/{email}").hasRole("ADMIN")
+                        .pathMatchers("/api/v1/usuario/emails").hasRole("INTERNAL_SERVICE")
                         .anyExchange().authenticated()
                 )
                 .build();
@@ -63,6 +74,16 @@ public class SecurityConfig {
 
         String email  = headers.getFirst(H_X_USER_EMAIL);
         String roles  = headers.getFirst(H_X_USER_ROLE);
+        String serviceName = headers.getFirst(H_X_SERVICE_NAME);
+
+        if (email == null && roles != null && roles.contains("INTERNAL_SERVICE")) {
+
+            if (serviceName == null || !ALLOWED_SERVICES.contains(serviceName)) {
+                return Mono.empty();
+            }
+
+            email = serviceName + "@crediya.internal";
+        }
 
         if (email == null || roles == null) {
             return Mono.empty(); // Esto permite que la request continúe sin autenticación

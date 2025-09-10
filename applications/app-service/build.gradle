@@ -1,6 +1,8 @@
 apply plugin: 'org.springframework.boot'
 
 dependencies {
+	implementation project(':sqs-sender')
+	implementation project(':metrics')
 	implementation project(':reactive-web')
 	implementation project(':rest-consumer')
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'

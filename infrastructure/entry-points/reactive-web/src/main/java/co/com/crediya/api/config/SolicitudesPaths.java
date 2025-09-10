@@ -11,4 +11,8 @@ public class SolicitudesPaths {
     private String createSolicitud;
 
     private String getSolicitudes;
+
+    private String aproveSolicitud;
+
+    private String rejectSolicitud;
 }

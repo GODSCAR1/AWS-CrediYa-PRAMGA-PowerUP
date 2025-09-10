@@ -7,6 +7,6 @@ import reactor.core.publisher.Mono;
 
 public interface SolicitudRepository {
     Mono<Solicitud> save(Solicitud solicitud);
-
+    Mono<Solicitud> findById(String id);
 
 }

@@ -69,4 +69,24 @@ public class Handler {
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(response));
     }
+
+    public Mono<ServerResponse> aprobarSolicitud(ServerRequest request) {
+        String idSolicitud = request.pathVariable("id");
+
+        return transactionalSolicitudUseCase.handleSolicitudManualTransactional(idSolicitud, Boolean.TRUE)
+                .flatMap(solicitudAprobada ->
+                        ServerResponse.ok()
+                                .bodyValue(objectMapper.map(solicitudAprobada, SolicitudDTO.class))
+                );
+    }
+
+    public Mono<ServerResponse> rechazarSolicitud(ServerRequest request) {
+        String idSolicitud = request.pathVariable("id");
+
+        return transactionalSolicitudUseCase.handleSolicitudManualTransactional(idSolicitud, Boolean.FALSE)
+                .flatMap(solicitudRechazada ->
+                        ServerResponse.ok()
+                                .bodyValue(objectMapper.map(solicitudRechazada, SolicitudDTO.class))
+                );
+    }
 }

@@ -5,6 +5,10 @@ spring:
     name: "${SPRING_APPLICATION_NAME:SOLICITUDES}"
   devtools:
     add-properties: "${SPRING_DEVTOOLS_ADD_PROPERTIES:false}"
+aws:
+  credentials:
+    access-key: "${AWS_ACCESS_KEY_ID:}"
+    secret-key: "${AWS_SECRET_ACCESS_KEY:}"
 adapters:
   r2dbc:
     host: "${R2DBC_HOST:127.0.0.1}"
@@ -18,9 +22,23 @@ routes:
   paths:
     createSolicitud: "${ROUTES_CREATE_SOLICITUD:/api/v1/solicitud}"
     getSolicitudes: "${ROUTES_GET_SOLICITUDES:/api/v1/solicitud/{nombreEstado}}"
+    aproveSolicitud: "${ROUTES_UPDATE_SOLICITUD:/api/v1/solicitud/aprove/{id}}"
+    rejectSolicitud: "${ROUTES_UPDATE_SOLICITUD:/api/v1/solicitud/reject/{id}}"
 adapter:
   restconsumer:
     timeout: 10000
     url: "${ADAPTER_RESTCONSUMER_URL:http://localhost:8080}"
     usuario:
       searchEndpoint: "${ADAPTER_RESTCONSUMER_USUARIO_SEARCH_ENDPOINT:/api/v1/usuario/emails}"
+  sqs:
+    region: "${AWS_REGION:us-east-1}"
+    queueUrl: "${AWS_SQS_QUEUE_URL:}"
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info"
+      base-path: "/actuator"
+  endpoint:
+    health:
+      show-details: "always"

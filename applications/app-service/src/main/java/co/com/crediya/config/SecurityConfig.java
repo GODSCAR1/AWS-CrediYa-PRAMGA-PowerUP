@@ -40,10 +40,12 @@ public class SecurityConfig {
                 .authorizeExchange(auth -> auth
                         // públicos reales
                         .pathMatchers("/actuator/health", "/public/**","/swagger-ui/**",
-                                "/v3/api-docs/**").permitAll()
+                                "/v3/api-docs/**", "/actuator/health", "/actuator/health/**").permitAll()
                         .pathMatchers(HttpMethod.POST,"/api/v1/solicitud").hasRole("CLIENTE")
                         .pathMatchers(HttpMethod.GET,"/api/v1/solicitud").hasRole("ASESOR")
                         .pathMatchers(HttpMethod.GET,"/api/v1/solicitud/{nombreEstado}").hasRole("ASESOR")
+                        .pathMatchers(HttpMethod.PUT,"/api/v1/solicitud/aprove/{id}").hasRole("ASESOR")
+                        .pathMatchers(HttpMethod.PUT,"/api/v1/solicitud/reject/{id}").hasRole("ASESOR")
                         .anyExchange().authenticated()
                 )
                 .build();

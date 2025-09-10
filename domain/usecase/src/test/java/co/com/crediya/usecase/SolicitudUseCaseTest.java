@@ -2,6 +2,8 @@ package co.com.crediya.usecase;
 
 import co.com.crediya.model.estados.Estado;
 import co.com.crediya.model.estados.gateways.EstadoRepository;
+import co.com.crediya.model.events.SolicitudEvent;
+import co.com.crediya.model.events.gateways.EventPublisher;
 import co.com.crediya.model.solicitud.Solicitud;
 import co.com.crediya.model.solicitud.SolicitudInfo;
 import co.com.crediya.model.solicitud.gateways.CustomSolicitudRepository;
@@ -13,6 +15,7 @@ import co.com.crediya.model.usuario.gateways.UsuarioConsumer;
 import co.com.crediya.usecase.composite.SolicitudValidationComposite;
 import co.com.crediya.usecase.exception.EstadoValidationException;
 import co.com.crediya.usecase.exception.SecurityValidationException;
+import co.com.crediya.usecase.exception.SolicitudNotFoundException;
 import co.com.crediya.usecase.exception.SolicitudValidationException;
 import co.com.crediya.usecase.validation.MontoValidator;
 import co.com.crediya.usecase.validation.PlazoValidator;
@@ -48,6 +51,9 @@ class SolicitudUseCaseTest {
     @Mock
     private UsuarioConsumer usuarioConsumer;
 
+    @Mock
+    private EventPublisher eventPublisher;
+
     private Solicitud solicitud;
 
     private String authHeader;
@@ -66,7 +72,8 @@ class SolicitudUseCaseTest {
                         estadoRepository,
                         tipoPrestamoRepository,
                         customSolicitudRepository,
-                        usuarioConsumer);
+                        usuarioConsumer,
+                        eventPublisher);
 
         solicitud = Solicitud.builder()
                 .email("oscar@gmail.com")
@@ -348,6 +355,124 @@ class SolicitudUseCaseTest {
                     assertTrue(result.isLast());
                     return true;
                 }).verifyComplete();
+    }
+
+
+    @Test
+    void testHandleSolicitudManualMustFailWhenSolicitudIsNotFound() {
+        String id = "1";
+        Boolean aprobado = Boolean.TRUE;
+
+        when(solicitudRepository.findById(id))
+                .thenReturn(Mono.empty());
+        StepVerifier.create(solicitudUseCase.handleSolicitudManual(id, aprobado))
+                .expectErrorMatches(ex -> ex instanceof SolicitudNotFoundException
+                        && ex.getMessage().equals("No se encontró la solicitud con ID: " + id))
+                .verify();
+    }
+
+    @Test
+    void testHandleSolicitudManualMustFailWhenSolicitudIsAlreadyProcessed() {
+        String id = "1";
+        Boolean aprobado = Boolean.TRUE;
+
+        Solicitud existingSolicitud = Solicitud.builder()
+                .id(id)
+                .idEstado("2") // Estado diferente a "Pendiente de revision"
+                .build();
+
+        when(solicitudRepository.findById(id))
+                .thenReturn(Mono.just(existingSolicitud));
+        when(estadoRepository.findById("2")).thenReturn(Mono.just(Estado.builder().id("2").nombre("Aprobado").build()));
+
+        StepVerifier.create(solicitudUseCase.handleSolicitudManual(id, aprobado))
+                .expectErrorMatches(ex -> ex instanceof SecurityValidationException
+                        && ex.getMessage().equals("La solicitud ya ha sido procesada y no puede ser modificada."))
+                .verify();
+    }
+
+    @Test
+    void testHandleSolicitudManualShouldApproveSuccessfully() {
+        String id = "1";
+        Boolean aprobado = Boolean.TRUE;
+
+        Solicitud existingSolicitud = Solicitud.builder()
+                .id(id)
+                .idEstado("1") // Estado "Pendiente de revision"
+                .build();
+
+        Estado estadoPendiente = Estado.builder()
+                .id("1")
+                .nombre("Pendiente de revision")
+                .build();
+
+        Estado estadoAprobado = Estado.builder()
+                .id("2")
+                .nombre("Aprobado")
+                .build();
+
+        Solicitud updatedSolicitud = Solicitud.builder()
+                .id(id)
+                .idEstado("2") // Estado cambiado a "Aprobado"
+                .build();
+
+        when(solicitudRepository.findById(id))
+                .thenReturn(Mono.just(existingSolicitud));
+        when(estadoRepository.findById("1"))
+                .thenReturn(Mono.just(estadoPendiente));
+        when(estadoRepository.findByNombre("Aprobado"))
+                .thenReturn(Mono.just(estadoAprobado));
+        doNothing().when(eventPublisher).publishEventAsync(any(SolicitudEvent.class));
+        when(solicitudRepository.save(any(Solicitud.class)))
+                .thenReturn(Mono.just(updatedSolicitud));
+
+        StepVerifier.create(solicitudUseCase.handleSolicitudManual(id, aprobado))
+                .expectNextMatches(s -> s.getId().equals(id) && s.getIdEstado().equals("2"))
+                .verifyComplete();
+
+        verify(solicitudRepository).save(any(Solicitud.class));
+    }
+
+    @Test
+    void testHandleSolicitudManualShouldRejectSuccessfully() {
+        String id = "1";
+        Boolean aprobado = Boolean.FALSE;
+
+        Solicitud existingSolicitud = Solicitud.builder()
+                .id(id)
+                .idEstado("1") // Estado "Pendiente de revision"
+                .build();
+
+        Estado estadoPendiente = Estado.builder()
+                .id("1")
+                .nombre("Pendiente de revision")
+                .build();
+
+        Estado estadoAprobado = Estado.builder()
+                .id("1")
+                .nombre("Rechazado")
+                .build();
+
+        Solicitud updatedSolicitud = Solicitud.builder()
+                .id(id)
+                .idEstado("1") // Estado cambiado a "Rechazado"
+                .build();
+
+        when(solicitudRepository.findById(id))
+                .thenReturn(Mono.just(existingSolicitud));
+        when(estadoRepository.findById("1"))
+                .thenReturn(Mono.just(estadoPendiente));
+        when(estadoRepository.findByNombre("Rechazado"))
+                .thenReturn(Mono.just(estadoAprobado));
+        doNothing().when(eventPublisher).publishEventAsync(any(SolicitudEvent.class));
+        when(solicitudRepository.save(any(Solicitud.class)))
+                .thenReturn(Mono.just(updatedSolicitud));
+
+        StepVerifier.create(solicitudUseCase.handleSolicitudManual(id, aprobado))
+                .expectNextMatches(s -> s.getId().equals(id) && s.getIdEstado().equals("1"))
+                .verifyComplete();
+
+        verify(solicitudRepository).save(any(Solicitud.class));
     }
 
 

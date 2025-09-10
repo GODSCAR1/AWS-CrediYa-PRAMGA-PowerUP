@@ -2,6 +2,8 @@ package co.com.crediya.usecase;
 
 import co.com.crediya.model.estados.Estado;
 import co.com.crediya.model.estados.gateways.EstadoRepository;
+import co.com.crediya.model.events.gateways.EventPublisher;
+import co.com.crediya.model.events.SolicitudEvent;
 import co.com.crediya.model.solicitud.PagedSolicitud;
 import co.com.crediya.model.solicitud.Solicitud;
 import co.com.crediya.model.solicitud.SolicitudInfo;
@@ -14,6 +16,7 @@ import co.com.crediya.model.usuario.gateways.UsuarioConsumer;
 import co.com.crediya.usecase.composite.SolicitudValidationComposite;
 import co.com.crediya.usecase.exception.EstadoValidationException;
 import co.com.crediya.usecase.exception.SecurityValidationException;
+import co.com.crediya.usecase.exception.SolicitudNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import reactor.core.publisher.Flux;
@@ -35,6 +38,7 @@ public class SolicitudUseCase {
     private final TipoPrestamoRepository tipoPrestamoRepository;
     private final CustomSolicitudRepository customSolicitudRepository;
     private final UsuarioConsumer usuarioConsumer;
+    private final EventPublisher eventPublisher;
 
     public Mono<Solicitud> createSolicitud(Solicitud solicitud, String emailHeader) {
         return this.solicitudValidationComposite.validate(solicitud)
@@ -116,11 +120,9 @@ public class SolicitudUseCase {
     }
 
     private SolicitudInfo enrichSolicitudWithUsuario(SolicitudInfo solicitud, Usuario usuario) {
-
         solicitud.setNombre(usuario.getNombre());
         solicitud.setSalarioBase(usuario.getSalarioBase());
         return solicitud;
-
     }
 
     private PagedSolicitud buildPagedSolicitud(List<SolicitudInfo> content, int page, int size, long totalElements) {
@@ -149,5 +151,60 @@ public class SolicitudUseCase {
                 .build();
     }
 
+
+    public Mono<Solicitud> handleSolicitudManual(String id, Boolean aprobado) {
+        return this.solicitudRepository.findById(id)
+                .switchIfEmpty(Mono.error(new SolicitudNotFoundException("No se encontró la solicitud con ID: " + id)))
+                .flatMap(solicitud ->
+                        this.estadoRepository.findById(solicitud.getIdEstado())
+                                .flatMap(estado -> {
+                                    if (Objects.equals(estado.getNombre(), "Aprobado") || Objects.equals(estado.getNombre(), "Rechazado")) {
+                                        return Mono.error(new SecurityValidationException("La solicitud ya ha sido procesada y no puede ser modificada."));
+                                    }
+                                    return Mono.just(solicitud);
+                                })
+                )
+                .flatMap(solicitud -> {
+                    if (aprobado) {
+                        return aprobarSolicitud(solicitud);
+                    } else {
+                        return rechazarSolicitud(solicitud);
+                    }
+                })
+                .flatMap(solicitudProcesada -> {
+                    sendSQSEvent(solicitudProcesada, aprobado);
+                    return Mono.just(solicitudProcesada);
+                });
+
+    }
+
+    private Mono<Solicitud> aprobarSolicitud(Solicitud solicitud) {
+        return this.estadoRepository.findByNombre("Aprobado")
+                .flatMap(estadoAprobada -> {
+                    solicitud.setIdEstado(estadoAprobada.getId());
+                    return this.solicitudRepository.save(solicitud);
+                });
+    }
+
+    private Mono<Solicitud> rechazarSolicitud(Solicitud solicitud) {
+        return this.estadoRepository.findByNombre("Rechazado")
+                .flatMap(estadoRechazada -> {
+                    solicitud.setIdEstado(estadoRechazada.getId());
+                    return this.solicitudRepository.save(solicitud);
+                });
+    }
+
+    private void sendSQSEvent(Solicitud solicitud, Boolean aprobado) {
+        // Crear evento
+        SolicitudEvent evento = SolicitudEvent.builder()
+                .idSolicitud(solicitud.getId())
+                .aprobado(aprobado)
+                .monto(solicitud.getMonto())
+                .plazo(solicitud.getPlazo())
+                .email(solicitud.getEmail())
+                .build();
+
+        eventPublisher.publishEventAsync(evento);
+    }
 
 }

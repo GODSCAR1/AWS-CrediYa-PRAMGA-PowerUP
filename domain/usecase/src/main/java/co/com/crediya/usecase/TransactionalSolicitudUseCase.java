@@ -15,4 +15,10 @@ public class TransactionalSolicitudUseCase {
                 this.solicitudUseCase.createSolicitud(solicitud, emailHeader)
         );
     }
+
+    public Mono<Solicitud> handleSolicitudManualTransactional(String id, Boolean aprobado) {
+        return this.transactionPort.executeInTransaction(
+                this.solicitudUseCase.handleSolicitudManual(id, aprobado)
+        );
+    }
 }

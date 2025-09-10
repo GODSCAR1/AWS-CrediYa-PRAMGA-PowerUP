@@ -12,6 +12,8 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SolicitudInfoDTO {
+    private String id;
+
     private BigDecimal monto;
 
     private Integer plazo;

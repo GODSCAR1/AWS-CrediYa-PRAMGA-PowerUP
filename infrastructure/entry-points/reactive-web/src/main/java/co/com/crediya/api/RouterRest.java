@@ -21,8 +21,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 
 import java.awt.*;
 
-import static org.springframework.web.reactive.function.server.RequestPredicates.GET;
-import static org.springframework.web.reactive.function.server.RequestPredicates.POST;
+import static org.springframework.web.reactive.function.server.RequestPredicates.*;
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 
 @Configuration
@@ -105,10 +104,74 @@ public class RouterRest {
                     ),
                     path = "/api/v1/solicitud/{nombreEstado}",
                     method = RequestMethod.GET
+            ),
+            @RouterOperation(
+                    operation = @Operation(
+                            operationId = "aproveSolicitud",
+                            summary = "Aprobar solicitud",
+                            description = "Aprueba una solicitud específica por su ID",
+                            tags = {"Solicitudes"},
+                            parameters = {
+                                    @Parameter(
+                                            name = "id",
+                                            description = "ID de la solicitud a aprobar",
+                                            required = true
+                                    )
+                            },
+                            responses = {
+                                    @ApiResponse(
+                                            responseCode = "200",
+                                            description = "Solicitud aprobada exitosamente"
+                                    ),
+                                    @ApiResponse(
+                                            responseCode = "400",
+                                            description = "La solicitud ya fué procesada"
+                                    ),
+                                    @ApiResponse(
+                                            responseCode = "404",
+                                            description = "Solicitud no encontrada"
+                                    )
+                            }
+                    ),
+                    path = "/api/v1/solicitud/aprove/{id}",
+                    method = RequestMethod.PUT
+            ),
+            @RouterOperation(
+                    operation = @Operation(
+                            operationId = "rejectSolicitud",
+                            summary = "Rechazar solicitud",
+                            description = "Rechaza una solicitud específica por su ID",
+                            tags = {"Solicitudes"},
+                            parameters = {
+                                    @Parameter(
+                                            name = "id",
+                                            description = "ID de la solicitud a rechazar",
+                                            required = true
+                                    )
+                            },
+                            responses = {
+                                    @ApiResponse(
+                                            responseCode = "200",
+                                            description = "Solicitud rechazada exitosamente"
+                                    ),
+                                    @ApiResponse(
+                                            responseCode = "400",
+                                            description = "La solicitud ya fué procesada"
+                                    ),
+                                    @ApiResponse(
+                                            responseCode = "404",
+                                            description = "Solicitud no encontrada"
+                                    )
+                            }
+                    ),
+                    path = "/api/v1/solicitud/reject/{id}",
+                    method = RequestMethod.PUT
             )
     })
     public RouterFunction<ServerResponse> routerFunction(Handler handler) {
         return route(POST(solicitudesPaths.getCreateSolicitud()), solicitudesHandler::listenCreateSolicitud)
-                .andRoute(GET(solicitudesPaths.getGetSolicitudes()), solicitudesHandler::obtenerSolicitudes);
+                .andRoute(GET(solicitudesPaths.getGetSolicitudes()), solicitudesHandler::obtenerSolicitudes)
+                .andRoute(PUT(solicitudesPaths.getAproveSolicitud()), solicitudesHandler::aprobarSolicitud)
+                .andRoute(PUT(solicitudesPaths.getRejectSolicitud()), solicitudesHandler::rechazarSolicitud);
     }
 }

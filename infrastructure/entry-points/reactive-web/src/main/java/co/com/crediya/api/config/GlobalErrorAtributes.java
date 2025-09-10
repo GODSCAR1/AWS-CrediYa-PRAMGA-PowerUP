@@ -2,6 +2,7 @@ package co.com.crediya.api.config;
 
 import co.com.crediya.usecase.exception.EstadoValidationException;
 import co.com.crediya.usecase.exception.SecurityValidationException;
+import co.com.crediya.usecase.exception.SolicitudNotFoundException;
 import co.com.crediya.usecase.exception.SolicitudValidationException;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
 import org.springframework.boot.web.reactive.error.DefaultErrorAttributes;
@@ -26,6 +27,10 @@ public class GlobalErrorAtributes extends DefaultErrorAttributes {
         } else if (error instanceof SecurityValidationException) {
             atributes.put("status", HttpStatus.UNAUTHORIZED.value());
             atributes.put("error", HttpStatus.UNAUTHORIZED.getReasonPhrase());
+            atributes.put("message", error.getMessage());
+        } else if (error instanceof SolicitudNotFoundException) {
+            atributes.put("status", HttpStatus.NOT_FOUND.value());
+            atributes.put("error", HttpStatus.NOT_FOUND.getReasonPhrase());
             atributes.put("message", error.getMessage());
         } else{
             atributes.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());

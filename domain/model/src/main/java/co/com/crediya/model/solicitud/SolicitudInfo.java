@@ -9,7 +9,10 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder(toBuilder = true)
 public class SolicitudInfo {
+    private String id;
+
     private BigDecimal monto;
+
     private Integer plazo;
 
     private String email;

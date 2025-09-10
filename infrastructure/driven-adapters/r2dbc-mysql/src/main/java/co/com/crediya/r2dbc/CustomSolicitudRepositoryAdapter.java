@@ -29,6 +29,7 @@ public class CustomSolicitudRepositoryAdapter implements CustomSolicitudReposito
                 .bind("size", size)
                 .bind("offset", offset)
                 .map((row, metadata) -> SolicitudInfo.builder()
+                        .id(row.get("id_solicitud", String.class))
                         .monto(row.get("monto", BigDecimal.class))
                         .plazo(row.get("plazo", Integer.class))
                         .email(row.get("email", String.class))
@@ -58,7 +59,7 @@ public class CustomSolicitudRepositoryAdapter implements CustomSolicitudReposito
        String orderByColumn = getOrderByColumn(sortBy);
        String direction = "desc".equalsIgnoreCase(sortDirection) ? "DESC" : "ASC";
        return """
-               SELECT s.monto, s.plazo, s.email, t.nombre AS nombre_tipo_prestamo, t.tasa_interes, e.nombre AS nombre_estado
+               SELECT s.id_solicitud, s.monto, s.plazo, s.email, t.nombre AS nombre_tipo_prestamo, t.tasa_interes, e.nombre AS nombre_estado
                FROM solicitud s
                JOIN tipo_prestamo t ON s.id_tipo_prestamo = t.id_tipo_prestamo
                JOIN estados e ON s.id_estado = e.id_estado

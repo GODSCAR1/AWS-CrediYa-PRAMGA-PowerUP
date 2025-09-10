@@ -46,7 +46,7 @@ public class SecurityConfig {
                 .authorizeExchange(auth -> auth
                         // públicos reales
                         .pathMatchers("/actuator/health", "/public/**", "/api/v1/login",
-                                "/swagger-ui/**","/v3/api-docs/**").permitAll()
+                                "/swagger-ui/**","/v3/api-docs/**", "/actuator/health", "/actuator/health/**").permitAll()
                         // endpoints privados
                         .pathMatchers("/api/v1/usuario").hasAnyRole("ADMIN", "ASESOR")
                         .pathMatchers("/api/v1/usuario/update/{email}").hasRole("ADMIN")

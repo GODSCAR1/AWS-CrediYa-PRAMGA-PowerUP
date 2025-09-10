@@ -44,3 +44,18 @@ logging:
 
     # Logs de filtros de seguridad
     org.springframework.security.web: DEBUG
+
+
+management:
+  # Configuración de endpoints
+  endpoints:
+    web:
+      exposure:
+        # Exponer endpoints específicos (más seguro)
+        include: health,info
+      base-path: /actuator
+
+  # Configuración específica del endpoint de health
+  endpoint:
+    health:
+      show-details: always

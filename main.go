@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"os"
+	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -19,9 +21,25 @@ import (
 type SolicitudMessage struct {
 	Monto       float64 `json:"monto"`
 	Plazo       int     `json:"plazo"`
+	TasaInteres float64 `json:"tasaInteres"`
 	IdSolicitud string  `json:"idSolicitud"`
 	Email       string  `json:"email"`
 	Aprobado    bool    `json:"aprobado"`
+}
+
+type CuotaMensual struct {
+	Mes            int     `json:"mes"`
+	Capital        float64 `json:"capital"`
+	Interes        float64 `json:"interes"`
+	CuotaTotal     float64 `json:"cuota_total"`
+	SaldoPendiente float64 `json:"saldo_pendiente"`
+}
+
+type PlanPagos struct {
+	MontoTotal     float64        `json:"monto_total"`
+	CuotaMensual   float64        `json:"cuota_mensual"`
+	TotalIntereses float64        `json:"total_intereses"`
+	Cuotas         []CuotaMensual `json:"cuotas"`
 }
 
 // Cliente SES global
@@ -45,6 +63,91 @@ func handler(ctx context.Context, sqsEvent events.SQSEvent) error {
 	return nil
 }
 
+// Calcula la cuota mensual usando la fórmula de amortización francesa
+func calcularCuotaMensual(capital, tasaMensual float64, plazoMeses int) float64 {
+
+	numerador := capital * tasaMensual * math.Pow(1+tasaMensual, float64(plazoMeses))
+	denominador := math.Pow(1+tasaMensual, float64(plazoMeses)) - 1
+
+	return numerador / denominador
+}
+
+// Genera el plan de pagos detallado
+func generarPlanPagos(capital, tasaMensualPorcentual float64, plazoMeses int) *PlanPagos {
+	tasaMensual := tasaMensualPorcentual / 100
+	cuotaMensual := calcularCuotaMensual(capital, tasaMensual, plazoMeses)
+
+	cuotas := make([]CuotaMensual, plazoMeses)
+	saldoPendiente := capital
+	totalIntereses := 0.0
+
+	for i := 0; i < plazoMeses; i++ {
+		pagoInteres := saldoPendiente * tasaMensual
+		pagoCapital := cuotaMensual - pagoInteres
+
+		if i == plazoMeses-1 {
+			// Ajuste final para evitar errores de redondeo
+			pagoCapital = saldoPendiente
+			cuotaMensual = pagoCapital + pagoInteres
+		}
+
+		saldoPendiente -= pagoCapital
+		totalIntereses += pagoInteres
+
+		cuotas[i] = CuotaMensual{
+			Mes:            i + 1,
+			Capital:        math.Round(pagoCapital*100) / 100,
+			Interes:        math.Round(pagoInteres*100) / 100,
+			CuotaTotal:     math.Round(cuotaMensual*100) / 100,
+			SaldoPendiente: math.Round(saldoPendiente*100) / 100,
+		}
+	}
+
+	return &PlanPagos{
+		MontoTotal:     capital,
+		CuotaMensual:   math.Round(cuotaMensual*100) / 100,
+		TotalIntereses: math.Round(totalIntereses*100) / 100,
+		Cuotas:         cuotas,
+	}
+}
+
+func generarTextoPlanPagos(plan *PlanPagos, idSolicitud string) string {
+	var texto strings.Builder
+
+	texto.WriteString("¡FELICIDADES! TU PRÉSTAMO HA SIDO APROBADO\n")
+	texto.WriteString("==========================================\n\n")
+	texto.WriteString(fmt.Sprintf("Número de Solicitud: %s\n\n", idSolicitud))
+
+	texto.WriteString("RESUMEN DEL PRÉSTAMO:\n")
+	texto.WriteString(fmt.Sprintf("• Monto Total: $%.2f\n", plan.MontoTotal))
+	texto.WriteString(fmt.Sprintf("• Cuota Mensual: $%.2f\n", plan.CuotaMensual))
+	texto.WriteString(fmt.Sprintf("• Total de Intereses: $%.2f\n", plan.TotalIntereses))
+	texto.WriteString(fmt.Sprintf("• Total a Pagar: $%.2f\n", plan.MontoTotal+plan.TotalIntereses))
+	texto.WriteString(fmt.Sprintf("• Número de Cuotas: %d\n\n", len(plan.Cuotas)))
+
+	texto.WriteString("PLAN DE PAGOS:\n")
+	texto.WriteString("Mes | Capital   | Interés   | Cuota     | Saldo\n")
+	texto.WriteString("----+-----------+-----------+-----------+-----------\n")
+
+	for i, cuota := range plan.Cuotas {
+		if i < 5 || i >= len(plan.Cuotas)-2 { // Muestra primeros 5 y últimos 2
+			texto.WriteString(fmt.Sprintf("%3d | $%8.2f | $%8.2f | $%8.2f | $%8.2f\n",
+				cuota.Mes, cuota.Capital, cuota.Interes, cuota.CuotaTotal, cuota.SaldoPendiente))
+		} else if i == 5 {
+			texto.WriteString("... | (cuotas intermedias omitidas) ...\n")
+		}
+	}
+
+	texto.WriteString("\nPRÓXIMOS PASOS:\n")
+	texto.WriteString("• En breve nos contactaremos contigo para finalizar el proceso\n")
+	texto.WriteString("• Prepara la documentación requerida\n")
+	texto.WriteString("• La primera cuota se cobrará 30 días después del desembolso\n\n")
+	texto.WriteString("Gracias por confiar en nosotros.\n")
+	texto.WriteString("Equipo de Créditos")
+
+	return texto.String()
+}
+
 func procesarMensaje(ctx context.Context, record events.SQSMessage) error {
 	// Parsear mensaje JSON
 	var solicitud SolicitudMessage
@@ -61,23 +164,9 @@ func procesarMensaje(ctx context.Context, record events.SQSMessage) error {
 }
 
 func enviarEmailAprobacion(ctx context.Context, solicitud SolicitudMessage) error {
-	asunto := "¡Solicitud de Crédito Aprobada!"
-
-	cuerpo := fmt.Sprintf(`
-Estimado cliente,
-
-¡Excelentes noticias! Su solicitud de crédito ha sido APROBADA.
-
-Detalles de su solicitud:
-- ID de Solicitud: %s
-- Monto Aprobado: $%.2f
-- Plazo: %d meses
-
-Pronto nos pondremos en contacto con usted para continuar con el proceso.
-
-Saludos cordiales,
-Equipo de Créditos
-`, solicitud.IdSolicitud, solicitud.Monto, solicitud.Plazo)
+	asunto := "Préstamo Aprobado - Solicitud " + solicitud.IdSolicitud
+	planPagos := generarPlanPagos(solicitud.Monto, solicitud.TasaInteres, solicitud.Plazo)
+	cuerpo := generarTextoPlanPagos(planPagos, solicitud.IdSolicitud)
 
 	return enviarEmail(ctx, solicitud.Email, asunto, cuerpo)
 }

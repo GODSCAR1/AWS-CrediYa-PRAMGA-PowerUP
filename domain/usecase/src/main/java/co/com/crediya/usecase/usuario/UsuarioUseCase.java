@@ -9,6 +9,9 @@ import co.com.crediya.usecase.usuario.composite.UsuarioValidationComposite;
 import co.com.crediya.usecase.usuario.exception.RolValidationException;
 import co.com.crediya.usecase.usuario.exception.UsuarioNotFoundException;
 import co.com.crediya.usecase.usuario.exception.UsuarioValidationException;
+import co.com.crediya.usecase.usuario.message.RolMessage;
+import co.com.crediya.usecase.usuario.message.UsuarioMessage;
+import co.com.crediya.usecase.usuario.message.ValidationMessage;
 import co.com.crediya.usecase.usuario.validation.EmailValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
@@ -28,13 +31,13 @@ public class UsuarioUseCase {
     public Mono<Usuario> createUsuario(Usuario usuario){
         return this.usuarioValidationComposite.validate(usuario)
                 .doOnError(
-                        error -> log.severe(String.format("Error de validacion: %s",  error.getMessage()))
+                        error -> log.severe(String.format(ValidationMessage.ERROR_GENERICO.getMensaje(),  error.getMessage()))
                 )
                 .then(Mono.defer(() ->
                         this.rolRepository.findByNombre("CLIENTE")
                                 .switchIfEmpty(Mono.defer(() -> {
-                                    log.severe("Rol no encontrado");
-                                    return Mono.error(new RolValidationException("Rol no encontrado"));
+                                    log.severe(RolMessage.ROL_NO_ENCONTRADO.getMensaje());
+                                    return Mono.error(new RolValidationException(RolMessage.ROL_NO_ENCONTRADO.getMensaje()));
                                 }))
                                 .flatMap(rol -> {
                                     usuario.setIdRol(rol.getId());
@@ -43,17 +46,17 @@ public class UsuarioUseCase {
                                 })
                 ))
                 .doOnSuccess(
-                        usuarioGuardado -> log.info(String.format("Usuario %s creado exitosamente", usuarioGuardado.getEmail()))
+                        usuarioGuardado -> log.info(String.format(UsuarioMessage.USUARIO_CREADO.getMensaje(), usuarioGuardado.getEmail()))
                 );
     }
 
     public Flux<Usuario> getAllUsuariosByEmails(List<String> emails){
         return this.usuarioRepository.findAllByEmail(emails)
                 .switchIfEmpty(Mono.defer(() -> {
-                    log.severe("No se encontraron usuarios");
-                    return Mono.error(new UsuarioNotFoundException("No se encontraron usuarios"));
+                    log.severe(UsuarioMessage.USUARIOS_NO_ENCONTRADOS.getMensaje());
+                    return Mono.error(new UsuarioNotFoundException(UsuarioMessage.USUARIOS_NO_ENCONTRADOS.getMensaje()));
                 }))
-                .doOnComplete(() -> log.info("Usuarios obtenidos exitosamente"));
+                .doOnComplete(() -> log.info(UsuarioMessage.USUARIOS_OBTENIDOS.getMensaje()));
     }
 
 }

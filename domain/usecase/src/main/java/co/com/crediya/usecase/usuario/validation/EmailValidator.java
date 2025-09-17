@@ -4,6 +4,7 @@ import co.com.crediya.model.Usuario;
 import co.com.crediya.model.gateways.UsuarioRepository;
 import co.com.crediya.usecase.Validator;
 import co.com.crediya.usecase.usuario.exception.UsuarioValidationException;
+import co.com.crediya.usecase.usuario.message.ValidationMessage;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
@@ -18,13 +19,13 @@ public class EmailValidator implements Validator<Usuario> {
     @Override
     public Mono<Void> validate(Usuario usuario) {
         if (usuario.getEmail() == null || usuario.getEmail().isBlank()) {
-            return Mono.error(new UsuarioValidationException("El email es obligatorio"));
+            return Mono.error(new UsuarioValidationException(ValidationMessage.EMAIL_OBLIGATORIO.getMensaje()));
         }
         if (!pattern.matcher(usuario.getEmail()).matches()){
-            return Mono.error(new UsuarioValidationException("El email es invalido"));
+            return Mono.error(new UsuarioValidationException(ValidationMessage.EMAIL_INVALIDO.getMensaje()));
         }
         return usuarioRepository.findByEmail(usuario.getEmail())
-                .flatMap(u -> Mono.error(new UsuarioValidationException("El email ya existe")))
+                .flatMap(u -> Mono.error(new UsuarioValidationException(ValidationMessage.EMAIL_EXISTENTE.getMensaje())))
                 .cast(Void.class)
                 .switchIfEmpty(Mono.empty());
 

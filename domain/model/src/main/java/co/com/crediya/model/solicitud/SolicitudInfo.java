@@ -27,4 +27,6 @@ public class SolicitudInfo {
 
     private BigDecimal salarioBase;
 
+    private BigDecimal deudaTotalMensual;
+
 }

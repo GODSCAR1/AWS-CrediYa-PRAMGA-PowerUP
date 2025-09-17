@@ -9,4 +9,8 @@ public interface SolicitudRepository {
     Mono<Solicitud> save(Solicitud solicitud);
     Mono<Solicitud> findById(String id);
 
+    Flux<Solicitud> findByEmailAndEstadoNombre(String email, String estadoNombre);
+
+    Mono<Solicitud> update(Solicitud solicitud);
+
 }

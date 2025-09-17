@@ -28,5 +28,9 @@ include ':reactive-web'
 project(':reactive-web').projectDir = file('./infrastructure/entry-points/reactive-web')
 include ':metrics'
 project(':metrics').projectDir = file('./infrastructure/helpers/metrics')
-include ':sqs-sender'
-project(':sqs-sender').projectDir = file('./infrastructure/driven-adapters/sqs-sender')
+include ':sqs-sender-notificaciones'
+project(':sqs-sender-notificaciones').projectDir = file('./infrastructure/driven-adapters/sqs-sender-notificaciones')
+include ':sqs-sender-capacidad-endeudamiento'
+project(':sqs-sender-capacidad-endeudamiento').projectDir = file('./infrastructure/driven-adapters/sqs-sender-capacidad-endeudamiento')
+include ':sqs-listener-capacidad-endeudamiento'
+project(':sqs-listener-capacidad-endeudamiento').projectDir = file('./infrastructure/entry-points/sqs-listener-capacidad-endeudamiento')

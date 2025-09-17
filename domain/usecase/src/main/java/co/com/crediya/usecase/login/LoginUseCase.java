@@ -8,6 +8,8 @@ import co.com.crediya.model.gateways.UsuarioRepository;
 import co.com.crediya.usecase.login.composite.LoginValidationComposite;
 import co.com.crediya.usecase.login.exception.LoginValidationException;
 
+import co.com.crediya.usecase.login.message.LoginMessage;
+import co.com.crediya.usecase.login.message.ValidationMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import reactor.core.publisher.Mono;
@@ -24,24 +26,24 @@ public class LoginUseCase {
     public Mono<LoginResponse> login(LoginRequest loginRequest) {
         return this.loginValidationComposite.validate(loginRequest)
                 .doOnError(
-                        error -> log.severe(String.format("Error de validacion: %s",  error.getMessage()))
+                        error -> log.severe(String.format(ValidationMessage.ERROR_GENERICO.getMensaje(),  error.getMessage()))
                 )
                 .then(Mono.defer(() ->
                     this.usuarioRepository.findByEmail(loginRequest.getEmail())
                             .switchIfEmpty(Mono.defer(() -> {
-                                log.severe("Usuario no encontrado");
-                                return Mono.error(new LoginValidationException("Credenciales incorrectas"));
+                                log.severe(LoginMessage.USUARIO_NO_ENCONTRADO.getMensaje());
+                                return Mono.error(new LoginValidationException(LoginMessage.CREDENCIALES_INVALIDAS.getMensaje()));
                             }))
                             .flatMap(usuario -> {
                                 if(!passwordEncoder.matches(loginRequest.getContrasena(), usuario.getContrasena())) {
-                                    return Mono.error(new LoginValidationException("Credenciales incorrectas"));
+                                    return Mono.error(new LoginValidationException(LoginMessage.CREDENCIALES_INVALIDAS.getMensaje()));
                                 }
                                 return this.tokenGenerator.generateToken(usuario)
                                         .map(token -> LoginResponse.builder().token(token).build());
                             })
                 ))
                 .doOnSuccess(
-                        loginResponse -> log.info(String.format("Usuario %s logueado exitosamente", loginRequest.getEmail()))
+                        loginResponse -> log.info(String.format(LoginMessage.USUARIO_LOGEADO.getMensaje(), loginRequest.getEmail()))
                 );
     }
 }

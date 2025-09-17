@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.RouterOperation;
 import org.springdoc.core.annotations.RouterOperations;
@@ -34,6 +35,7 @@ public class RouterRest {
                             summary = "Crear nuevo usuario",
                             description = "Crea un nuevo usuario en el sistema con las respectivas validaciones",
                             tags = {"Usuarios"},
+                            security = @SecurityRequirement(name = "bearerAuth"),
                             requestBody = @RequestBody(
                                     required = true,
                                     description = "Datos del usuario a crear",
@@ -112,7 +114,7 @@ public class RouterRest {
                                             description = "Login exitoso, token JWT generado",
                                             content = @Content(
                                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                                    schema = @Schema(implementation = LoginDtoRequest.class)
+                                                    schema = @Schema(implementation = LoginDtoResponse.class)
                                             )
                                     ),
                                     @ApiResponse(

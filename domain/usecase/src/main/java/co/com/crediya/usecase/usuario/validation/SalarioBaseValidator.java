@@ -3,6 +3,7 @@ package co.com.crediya.usecase.usuario.validation;
 import co.com.crediya.model.Usuario;
 import co.com.crediya.usecase.Validator;
 import co.com.crediya.usecase.usuario.exception.UsuarioValidationException;
+import co.com.crediya.usecase.usuario.message.ValidationMessage;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
@@ -13,13 +14,13 @@ public class SalarioBaseValidator implements Validator<Usuario> {
     @Override
     public Mono<Void> validate(Usuario usuario) {
         if(usuario.getSalarioBase() == null){
-            return Mono.error(new UsuarioValidationException("El salario base es obligatorio"));
+            return Mono.error(new UsuarioValidationException(ValidationMessage.SALARIO_BASE_OBLIGATORIO.getMensaje()));
         }
         if(usuario.getSalarioBase().compareTo(SALARIO_BASE_MINIMO) < 0){
-            return Mono.error(new UsuarioValidationException("El salario base debe ser mayor o igual a 0"));
+            return Mono.error(new UsuarioValidationException(ValidationMessage.SALARIO_BASE_MAYOR_QUE_CERO.getMensaje()));
         }
         if(usuario.getSalarioBase().compareTo(SALARIO_BASE_MAXIMO) > 0){
-            return Mono.error(new UsuarioValidationException("El salario base debe ser menor o igual a 15000000"));
+            return Mono.error(new UsuarioValidationException(ValidationMessage.SALARIO_BASE_MENOR_QUE_15000000.getMensaje()));
         }
         return Mono.empty();
     }

@@ -29,4 +29,6 @@ public class SolicitudInfoDTO {
     private String nombreEstado;
 
     private BigDecimal salarioBase;
+
+    private BigDecimal deudaTotalMensual;
 }

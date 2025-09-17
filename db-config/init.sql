@@ -43,8 +43,7 @@ CREATE TABLE IF NOT EXISTS solicitud(
 
 INSERT INTO estados (nombre, descripcion) VALUES
 ('Pendiente de revision', 'Solicitud creada y pendiente de validaciones iniciales.'),
-('Rechazada', 'Solicitud no aprobada según reglas automáticas o análisis.'),
-('Revision manual', 'Requiere evaluación humana por alertas o umbrales.'),
+('Rechazado', 'Solicitud no aprobada según reglas automáticas o análisis.'),
 ('Aprobado', 'Solicitud aprobada; puede continuar a desembolso.');
 
 INSERT INTO tipo_prestamo (nombre, monto_minimo, monto_maximo, tasa_interes, validacion_automatica) VALUES

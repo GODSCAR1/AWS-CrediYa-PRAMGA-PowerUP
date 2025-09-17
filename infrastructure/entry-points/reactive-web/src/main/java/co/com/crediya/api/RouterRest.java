@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.RouterOperation;
 import org.springdoc.core.annotations.RouterOperations;
@@ -37,6 +38,7 @@ public class RouterRest {
                             summary = "Crear nueva solicitud",
                             description = "Crea una nueva solicitud en el sistema con las respectivas validaciones",
                             tags = {"Solicitudes"},
+                            security = @SecurityRequirement(name = "bearerAuth"),
                             requestBody = @RequestBody(
                                     required = true,
                                     description = "Datos de la solicitud a crear",
@@ -69,6 +71,7 @@ public class RouterRest {
                             summary = "Obtener solicitudes paginadas",
                             description = "Obtiene una lista paginada de solicitudes que requieren revision manual",
                             tags = {"Solicitudes"},
+                            security = @SecurityRequirement(name = "bearerAuth"),
                             parameters = {
                                     @Parameter(
                                             name = "page",
@@ -111,6 +114,7 @@ public class RouterRest {
                             summary = "Aprobar solicitud",
                             description = "Aprueba una solicitud específica por su ID",
                             tags = {"Solicitudes"},
+                            security = @SecurityRequirement(name = "bearerAuth"),
                             parameters = {
                                     @Parameter(
                                             name = "id",
@@ -142,6 +146,7 @@ public class RouterRest {
                             summary = "Rechazar solicitud",
                             description = "Rechaza una solicitud específica por su ID",
                             tags = {"Solicitudes"},
+                            security = @SecurityRequirement(name = "bearerAuth"),
                             parameters = {
                                     @Parameter(
                                             name = "id",

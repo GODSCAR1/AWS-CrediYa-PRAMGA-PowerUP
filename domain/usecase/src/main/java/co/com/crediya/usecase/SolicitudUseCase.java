@@ -1,9 +1,12 @@
 package co.com.crediya.usecase;
 
+import co.com.crediya.model.dto.SQSDTO;
 import co.com.crediya.model.estados.Estado;
 import co.com.crediya.model.estados.gateways.EstadoRepository;
-import co.com.crediya.model.events.gateways.EventPublisher;
-import co.com.crediya.model.events.SolicitudEvent;
+import co.com.crediya.model.events.SolicitudEventCapacidadEndeudamiento;
+import co.com.crediya.model.events.gateways.EventPublisherCapacidadEndeudamiento;
+import co.com.crediya.model.events.gateways.EventPublisherNotificaciones;
+import co.com.crediya.model.events.SolicitudEventNotificaciones;
 import co.com.crediya.model.solicitud.PagedSolicitud;
 import co.com.crediya.model.solicitud.Solicitud;
 import co.com.crediya.model.solicitud.SolicitudInfo;
@@ -17,15 +20,16 @@ import co.com.crediya.usecase.composite.SolicitudValidationComposite;
 import co.com.crediya.usecase.exception.EstadoValidationException;
 import co.com.crediya.usecase.exception.SecurityValidationException;
 import co.com.crediya.usecase.exception.SolicitudNotFoundException;
+import co.com.crediya.usecase.message.SolicitudMessage;
+import co.com.crediya.usecase.message.ValidationMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -38,28 +42,29 @@ public class SolicitudUseCase {
     private final TipoPrestamoRepository tipoPrestamoRepository;
     private final CustomSolicitudRepository customSolicitudRepository;
     private final UsuarioConsumer usuarioConsumer;
-    private final EventPublisher eventPublisher;
-
+    private final EventPublisherNotificaciones eventPublisherNotificaciones;
+    private final EventPublisherCapacidadEndeudamiento eventPublisherCapacidadEndeudamiento;
+// Crear Solicitudes Nuevas
     public Mono<Solicitud> createSolicitud(Solicitud solicitud, String emailHeader) {
         return this.solicitudValidationComposite.validate(solicitud)
                 .doOnError(
-                        error -> log.warning("Error en la validacion de la solicitud: " + error.getMessage())
+                        error -> log.warning(String.format(ValidationMessage.ERROR_GENERICO.getMensaje(), error.getMessage()))
                 )
                 .then(Mono.defer(() -> {
                     Mono<String> estadoMono = this.estadoRepository.findByNombre("Pendiente de revision")
                             .switchIfEmpty(Mono.defer(() -> {
-                                log.warning("No se encontró el estado 'Pendiente de revision'");
-                                return Mono.error(new EstadoValidationException("El estado 'Pendiente de revision' no existe"));
+                                log.warning(SolicitudMessage.ESTADO_PENDIENTE_REVISION_NO_ENCONTRADO.getMensaje());
+                                return Mono.error(new EstadoValidationException(SolicitudMessage.ESTADO_PENDIENTE_REVISION_NO_ENCONTRADO.getMensaje()));
                             }))
                             .map(Estado::getId);
 
-                    Mono<String> tipoPrestamoMono = this.tipoPrestamoRepository.findByNombre(solicitud.getNombreTipoPrestamo())
-                            .map(TipoPrestamo::getId);
+                    Mono<TipoPrestamo> tipoPrestamoMono = this.tipoPrestamoRepository.findByNombre(solicitud.getNombreTipoPrestamo());
                     
                     return Mono.zip(estadoMono, tipoPrestamoMono)
                             .flatMap(tuple -> {
                                 String estadoId = tuple.getT1();
-                                String tipoPrestamoId = tuple.getT2();
+                                String tipoPrestamoId = tuple.getT2().getId();
+                                solicitud.setId(UUID.randomUUID().toString());
                                 solicitud.setEmail(emailHeader);
                                 solicitud.setIdEstado(estadoId);
                                 solicitud.setIdTipoPrestamo(tipoPrestamoId);
@@ -67,14 +72,55 @@ public class SolicitudUseCase {
                                         .map(solicitudGuardada -> {
                                             solicitudGuardada.setNombreTipoPrestamo(solicitud.getNombreTipoPrestamo());
                                             return solicitudGuardada;
+                                        })
+                                        .delayUntil(solicitudGuardada ->{
+                                            log.info(solicitudGuardada.toString());
+                                            if (Boolean.TRUE.equals(tuple.getT2().getValidacionAutomatica())){
+                                                return this.usuarioConsumer.getUsuariosByEmails(List.of(emailHeader))
+                                                        .take(1)
+                                                        .flatMap(usuario -> sendSQSEventCapacidadEndeudamiento(solicitudGuardada, tuple.getT2().getTasaInteres(), usuario.getSalarioBase()));
+                                            }
+                                            return Mono.empty();
                                         });
+
+
                             })
                             .doOnSuccess(solicitudGuardada ->
-                                    log.info(String.format("Solicitud %s creada exitosamente", solicitudGuardada.getId())));
+                                    log.info(String.format(SolicitudMessage.SOLICITUD_CREADA.getMensaje(), solicitudGuardada.getId())));
 
                 }));
     }
 
+    private Mono<BigDecimal> calculateDeudaMensualActual(String email){
+        return this.solicitudRepository.findByEmailAndEstadoNombre(email, "Aprobado")
+                .flatMap(this::calculateCuotaMensual)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private Mono<BigDecimal> calculateCuotaMensual(Solicitud solicitud){
+        return this.tipoPrestamoRepository.findById(solicitud.getIdTipoPrestamo())
+                .map(tipoPrestamo -> cuotaMensual(solicitud.getMonto(), tipoPrestamo.getTasaInteres(), solicitud.getPlazo()))
+                .doOnSuccess(cuota -> log.info("Cuota Mensual: " + cuota.toString()));
+    }
+    private BigDecimal cuotaMensual(BigDecimal monto, BigDecimal tasaInteres, int plazo) {
+        // Convertir la tasa de interés a double para los cálculos de potencia
+        tasaInteres = tasaInteres.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP);
+
+        // Calcular (1 + tasa)^plazo
+        BigDecimal factorInteres = tasaInteres.add(BigDecimal.ONE).pow(plazo);
+
+        // Calcular el numerador: tasa * (1 + tasa)^plazo
+        BigDecimal numerador = tasaInteres.multiply(factorInteres);
+
+        // Calcular el denominador: (1 + tasa)^plazo - 1
+        BigDecimal denominador = factorInteres.subtract(BigDecimal.ONE);
+
+        // Calcular la cuota: monto * (numerador / denominador)
+        BigDecimal factorCuota = numerador.divide(denominador, 10, RoundingMode.HALF_UP);
+
+        return monto.multiply(factorCuota).setScale(2, RoundingMode.HALF_UP);
+    }
+// Solicitudes Paginadas
     public Mono<PagedSolicitud> getSolicitudPaged(String nombreEstado, int page, int size, String sortBy, String sortDirection) {
 
         Mono<Long> totalCountMono = this.customSolicitudRepository.countByNombreEstado(nombreEstado);
@@ -101,27 +147,41 @@ public class SolicitudUseCase {
                     Flux<Usuario> usuarioFlux = this.usuarioConsumer.getUsuariosByEmails(uniqueEmails);
 
                     return usuarioFlux.collectList()
-                            .map(usuariosList -> {
-                                        Map<String, Usuario> usuarioMap = usuariosList.stream()
-                                                .collect(Collectors.toMap(Usuario::getEmail, Function.identity()));
+                            .flatMap(usuariosList -> {
+                                // Crear mapa de usuarios por email
+                                Map<String, Usuario> usuarioMap = usuariosList.stream()
+                                        .collect(Collectors.toMap(Usuario::getEmail, Function.identity()));
 
-                                List<SolicitudInfo> solicitudesEnriquecidas = solicitudesList.stream()
-                                        .map(solicitud -> {
-                                            Usuario usuario = usuarioMap.get(solicitud.getEmail());
-                                            return enrichSolicitudWithUsuario(solicitud, usuario);
-                                        })
-                                        .toList();
+                                // Calcular deudas para cada usuario obtenido usando flatMap
+                                return Flux.fromIterable(usuariosList)
+                                        .flatMap(usuario ->
+                                                this.calculateDeudaMensualActual(usuario.getEmail())
+                                                        .map(deuda -> Map.entry(usuario.getEmail(), deuda))
+                                                        .onErrorReturn(Map.entry(usuario.getEmail(), BigDecimal.ZERO))
+                                        )
+                                        .collectMap(Map.Entry::getKey, Map.Entry::getValue)
+                                        .map(deudasMap -> {
+                                            List<SolicitudInfo> solicitudesEnriquecidas = solicitudesList.stream()
+                                                    .map(solicitud -> {
+                                                        Usuario usuario = usuarioMap.get(solicitud.getEmail());
+                                                        BigDecimal deudaMensual = deudasMap.getOrDefault(solicitud.getEmail(), BigDecimal.ZERO);
+                                                        return enrichSolicitud(solicitud, usuario, deudaMensual);
+                                                    })
+                                                    .toList();
 
-                                return buildPagedSolicitud(solicitudesEnriquecidas, page, size, totalCount);
+                                            return buildPagedSolicitud(solicitudesEnriquecidas, page, size, totalCount);
+                                        });
                             });
                 });
 
 
+
     }
 
-    private SolicitudInfo enrichSolicitudWithUsuario(SolicitudInfo solicitud, Usuario usuario) {
+    private SolicitudInfo enrichSolicitud(SolicitudInfo solicitud, Usuario usuario, BigDecimal deudaMensual) {
         solicitud.setNombre(usuario.getNombre());
         solicitud.setSalarioBase(usuario.getSalarioBase());
+        solicitud.setDeudaTotalMensual(deudaMensual);
         return solicitud;
     }
 
@@ -151,15 +211,15 @@ public class SolicitudUseCase {
                 .build();
     }
 
-
+// Manejo de solicitud Manual.
     public Mono<Solicitud> handleSolicitudManual(String id, Boolean aprobado) {
         return this.solicitudRepository.findById(id)
-                .switchIfEmpty(Mono.error(new SolicitudNotFoundException("No se encontró la solicitud con ID: " + id)))
+                .switchIfEmpty(Mono.error(new SolicitudNotFoundException(String.format(SolicitudMessage.SOLICITUD_NO_ENCONTRADA.getMensaje(), id))))
                 .flatMap(solicitud ->
                         this.estadoRepository.findById(solicitud.getIdEstado())
                                 .flatMap(estado -> {
                                     if (Objects.equals(estado.getNombre(), "Aprobado") || Objects.equals(estado.getNombre(), "Rechazado")) {
-                                        return Mono.error(new SecurityValidationException("La solicitud ya ha sido procesada y no puede ser modificada."));
+                                        return Mono.error(new SecurityValidationException(SolicitudMessage.SOLICITUD_PROCESADA.getMensaje()));
                                     }
                                     return Mono.just(solicitud);
                                 })
@@ -171,10 +231,11 @@ public class SolicitudUseCase {
                         return rechazarSolicitud(solicitud);
                     }
                 })
-                .flatMap(solicitudProcesada -> {
-                    sendSQSEvent(solicitudProcesada, aprobado);
-                    return Mono.just(solicitudProcesada);
-                });
+                .flatMap(solicitudProcesada -> this.tipoPrestamoRepository.findById(solicitudProcesada.getIdTipoPrestamo())
+                        .flatMap(tipoPrestamo -> {
+                            sendSQSEventNotificaciones(solicitudProcesada, tipoPrestamo.getTasaInteres(), aprobado);
+                            return Mono.just(solicitudProcesada);
+                        }));
 
     }
 
@@ -182,7 +243,7 @@ public class SolicitudUseCase {
         return this.estadoRepository.findByNombre("Aprobado")
                 .flatMap(estadoAprobada -> {
                     solicitud.setIdEstado(estadoAprobada.getId());
-                    return this.solicitudRepository.save(solicitud);
+                    return this.solicitudRepository.update(solicitud);
                 });
     }
 
@@ -190,21 +251,56 @@ public class SolicitudUseCase {
         return this.estadoRepository.findByNombre("Rechazado")
                 .flatMap(estadoRechazada -> {
                     solicitud.setIdEstado(estadoRechazada.getId());
-                    return this.solicitudRepository.save(solicitud);
+                    return this.solicitudRepository.update(solicitud);
                 });
     }
 
-    private void sendSQSEvent(Solicitud solicitud, Boolean aprobado) {
+    private void sendSQSEventNotificaciones(Solicitud solicitud, BigDecimal tasaInteres, Boolean aprobado) {
         // Crear evento
-        SolicitudEvent evento = SolicitudEvent.builder()
+        SolicitudEventNotificaciones evento = SolicitudEventNotificaciones.builder()
                 .idSolicitud(solicitud.getId())
                 .aprobado(aprobado)
                 .monto(solicitud.getMonto())
                 .plazo(solicitud.getPlazo())
+                .tasaInteres(tasaInteres)
                 .email(solicitud.getEmail())
                 .build();
 
-        eventPublisher.publishEventAsync(evento);
+        eventPublisherNotificaciones.publishEventAsync(evento);
     }
 
+    private Mono<Void> sendSQSEventCapacidadEndeudamiento(Solicitud solicitud, BigDecimal tasaInteres, BigDecimal salarioBase ) {
+        return this.calculateDeudaMensualActual(solicitud.getEmail())
+                .map(deuda -> SolicitudEventCapacidadEndeudamiento.builder()
+                            .idSolicitud(solicitud.getId())
+                            .monto(solicitud.getMonto())
+                            .plazo(solicitud.getPlazo())
+                            .email(solicitud.getEmail())
+                            .tasaInteres(tasaInteres)
+                            .salario(salarioBase)
+                            .deudaMensualActual(deuda)
+                            .build()
+
+        )
+                .doOnNext(eventPublisherCapacidadEndeudamiento::publishEventAsync)
+                .then();
+
+    }
+
+
+    // Metodo para procesar la solicitud entrante de la cola
+    public Mono<Void> processSQSEventCapacidadEndeudamiento(SQSDTO sqsdto) {
+        if (!Objects.equals(sqsdto.getEstado(), "Pendiente de revision")) {
+            return this.solicitudRepository.findById(sqsdto.getIdSolicitud())
+                    .zipWith(this.estadoRepository.findByNombre(sqsdto.getEstado()))
+                    .flatMap(tuple -> {
+                        Solicitud solicitud = tuple.getT1();
+                        Estado estado = tuple.getT2();
+                        solicitud.setIdEstado(estado.getId());
+                        return this.solicitudRepository.update(solicitud);
+                    })
+                    .then();
+        }
+        return Mono.empty();
+    }
 }

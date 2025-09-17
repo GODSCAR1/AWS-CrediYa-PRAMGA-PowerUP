@@ -31,8 +31,12 @@ adapter:
     usuario:
       searchEndpoint: "${ADAPTER_RESTCONSUMER_USUARIO_SEARCH_ENDPOINT:/api/v1/usuario/emails}"
   sqs:
-    region: "${AWS_REGION:us-east-1}"
-    queueUrl: "${AWS_SQS_QUEUE_URL:}"
+    notificaciones:
+      region: "${AWS_REGION:us-east-1}"
+      queueUrl: "${AWS_SQS_NOTIFICACIONES_QUEUE_URL:http://localhost:4566/000000000000/sample}"
+    capacidad-endeudamiento:
+      region: "${AWS_REGION:us-east-1}"
+      queueUrl: "${AWS_SQS_CAPACIDAD_ENDEUDAMIENTO_QUEUE_URL:http://localhost:4566/000000000000/sample}"
 management:
   endpoints:
     web:
@@ -42,3 +46,11 @@ management:
   endpoint:
     health:
       show-details: "always"
+entrypoint:
+  sqs:
+    region: "${AWS_REGION:us-east-1}"
+    queueUrl: "${AWS_SQS_NOTIFICACIONES_SOLICITUD_URL:http://localhost:4560/000000000000/sample}"
+    waitTimeSeconds: 20
+    maxNumberOfMessages: 10
+    visibilityTimeoutSeconds: 10
+    numberOfThreads: 1

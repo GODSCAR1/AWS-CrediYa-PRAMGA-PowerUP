@@ -1,0 +1,30 @@
+pluginManagement {
+    repositories {
+        //mavenLocal()
+        //maven { url = '...' }
+        gradlePluginPortal()
+    }
+}
+
+buildCache {
+    local {
+        directory = new File(rootDir, 'build-cache')
+    }
+}
+
+rootProject.name = 'AUTENTICACION'
+
+include ':app-service'
+include ':model'
+include ':usecase'
+project(':app-service').projectDir = file('./applications/app-service')
+project(':model').projectDir = file('./domain/model')
+project(':usecase').projectDir = file('./domain/usecase')
+include ':r2dbc-mysql'
+project(':r2dbc-mysql').projectDir = file('./infrastructure/driven-adapters/r2dbc-mysql')
+include ':reactive-web'
+project(':reactive-web').projectDir = file('./infrastructure/entry-points/reactive-web')
+include ':jwt-token'
+project(':jwt-token').projectDir = file('./infrastructure/driven-adapters/jwt-token')
+include ':password-encoder'
+project(':password-encoder').projectDir = file('./infrastructure/driven-adapters/password-encoder')

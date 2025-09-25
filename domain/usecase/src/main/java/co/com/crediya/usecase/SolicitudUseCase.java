@@ -4,9 +4,11 @@ import co.com.crediya.model.dto.SQSDTO;
 import co.com.crediya.model.estados.Estado;
 import co.com.crediya.model.estados.gateways.EstadoRepository;
 import co.com.crediya.model.events.SolicitudEventCapacidadEndeudamiento;
+import co.com.crediya.model.events.SolicitudEventReportes;
 import co.com.crediya.model.events.gateways.EventPublisherCapacidadEndeudamiento;
 import co.com.crediya.model.events.gateways.EventPublisherNotificaciones;
 import co.com.crediya.model.events.SolicitudEventNotificaciones;
+import co.com.crediya.model.events.gateways.EventPublisherReportes;
 import co.com.crediya.model.solicitud.PagedSolicitud;
 import co.com.crediya.model.solicitud.Solicitud;
 import co.com.crediya.model.solicitud.SolicitudInfo;
@@ -44,6 +46,7 @@ public class SolicitudUseCase {
     private final UsuarioConsumer usuarioConsumer;
     private final EventPublisherNotificaciones eventPublisherNotificaciones;
     private final EventPublisherCapacidadEndeudamiento eventPublisherCapacidadEndeudamiento;
+    private final EventPublisherReportes eventPublisherReportes;
 // Crear Solicitudes Nuevas
     public Mono<Solicitud> createSolicitud(Solicitud solicitud, String emailHeader) {
         return this.solicitudValidationComposite.validate(solicitud)
@@ -244,7 +247,11 @@ public class SolicitudUseCase {
                 .flatMap(estadoAprobada -> {
                     solicitud.setIdEstado(estadoAprobada.getId());
                     return this.solicitudRepository.update(solicitud);
-                });
+                })
+                .flatMap(solicitudActualizada ->
+                        sendSQSEventReportes(solicitudActualizada.getMonto())
+                                .thenReturn(solicitudActualizada)
+                );
     }
 
     private Mono<Solicitud> rechazarSolicitud(Solicitud solicitud) {
@@ -299,8 +306,19 @@ public class SolicitudUseCase {
                         solicitud.setIdEstado(estado.getId());
                         return this.solicitudRepository.update(solicitud);
                     })
+                    .flatMap(solicitud -> sendSQSEventReportes(solicitud.getMonto()))
                     .then();
         }
+        return Mono.empty();
+    }
+
+    private Mono<Void> sendSQSEventReportes(BigDecimal monto) {
+
+        SolicitudEventReportes evento = SolicitudEventReportes.builder()
+                .monto(monto)
+                .build();
+
+        eventPublisherReportes.publishEventAsync(evento);
         return Mono.empty();
     }
 }

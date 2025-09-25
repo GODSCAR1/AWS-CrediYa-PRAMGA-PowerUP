@@ -7,6 +7,7 @@ import co.com.crediya.model.events.SolicitudEventCapacidadEndeudamiento;
 import co.com.crediya.model.events.SolicitudEventNotificaciones;
 import co.com.crediya.model.events.gateways.EventPublisherCapacidadEndeudamiento;
 import co.com.crediya.model.events.gateways.EventPublisherNotificaciones;
+import co.com.crediya.model.events.gateways.EventPublisherReportes;
 import co.com.crediya.model.solicitud.Solicitud;
 import co.com.crediya.model.solicitud.SolicitudInfo;
 import co.com.crediya.model.solicitud.gateways.CustomSolicitudRepository;
@@ -62,6 +63,9 @@ class SolicitudUseCaseTest {
     @Mock
     private EventPublisherCapacidadEndeudamiento eventPublisherCapacidadEndeudamiento;
 
+    @Mock
+    private EventPublisherReportes eventPublisherReportes;
+
     private Solicitud solicitud;
 
     private String authHeader;
@@ -82,7 +86,8 @@ class SolicitudUseCaseTest {
                         customSolicitudRepository,
                         usuarioConsumer,
                         eventPublisherNotificaciones,
-                        eventPublisherCapacidadEndeudamiento);
+                        eventPublisherCapacidadEndeudamiento,
+                        eventPublisherReportes);
 
         solicitud = Solicitud.builder()
                 .email("oscar@gmail.com")

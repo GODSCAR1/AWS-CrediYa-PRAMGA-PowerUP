@@ -1,6 +1,7 @@
 apply plugin: 'org.springframework.boot'
 
 dependencies {
+	implementation project(':sqs-sender-reportes')
 	implementation project(':sqs-listener-capacidad-endeudamiento')
 	implementation project(':sqs-sender-capacidad-endeudamiento')
 	implementation 'software.amazon.awssdk:sts'

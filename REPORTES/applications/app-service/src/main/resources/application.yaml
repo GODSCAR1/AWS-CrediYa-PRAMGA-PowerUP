@@ -1,0 +1,51 @@
+server:
+  port: "${SERVER_PORT:8082}"
+spring:
+  application:
+    name: "${SPRING_APPLICATION_NAME:REPORTES}"
+  profiles:
+    active: "${SPRING_PROFILES_ACTIVE:local}"
+aws:
+  region: "${AWS_REGION:us-east-1}"
+  credentials:
+    access-key: "${AWS_ACCESS_KEY_ID:}"
+    secret-key: "${AWS_SECRET_ACCESS_KEY:}"
+  dynamodb:
+    endpoint: "${AWS_DYNAMODB_ENDPOINT:https://dynamodb.us-east-1.amazonaws.com}"
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info"
+      base-path: "/actuator"
+  endpoint:
+    health:
+      show-details: "always"
+cors:
+  allowed-origins: "${CORS_ALLOWED_ORIGINS:http://localhost:8083}"
+routes:
+  paths:
+    getReporte: "${ROUTES_GET_REPORTE:/api/v1/reporte}"
+entrypoint:
+  sqs:
+    region: "${AWS_REGION:us-east-1}"
+    queueUrl: "${AWS_SQS_REPORTES_QUEUE_URL:http://localhost:4560/000000000000/sample}"
+    waitTimeSeconds: 20
+    maxNumberOfMessages: 10
+    visibilityTimeoutSeconds: 10
+    numberOfThreads: 1
+adapter:
+  sqs:
+    region: "${AWS_REGION:us-east-1}"
+    queueUrl: "${AWS_SQS_REPORTE_DIARIO_QUEUE_URL:http://localhost:4560/000000000000/sample}"
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /reportes/v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /reportes/swagger-ui.html
+    config-url: /reportes/v3/api-docs/swagger-config
+    url: /reportes/v3/api-docs
+    disable-swagger-default-url: true

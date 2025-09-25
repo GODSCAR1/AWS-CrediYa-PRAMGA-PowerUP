@@ -1,0 +1,33 @@
+# Database configuration
+dbMasterUsername: admin
+dbMasterPasswordSecretName: ${self:service}-${self:provider.stage}-db-master-password
+appUsername: appuser
+appPassword: app_pass_123
+appCredentialsSecretName: ${self:service}-${self:provider.stage}-db-app-credentials
+dbInstanceClass: db.t3.micro
+dbAllocatedStorage: 20
+
+# SES configuration
+sesFromEmail: #ADD EMAIL
+sesToEmail: #ADD EMAIL
+
+alertEmail: #ADD EMAIL
+
+# JWT configuration
+jwtExpiration: 86400000
+bcryptStrength: 12
+
+# Microservices ports
+autenticacionPort: 8080
+solicitudesPort: 8081
+reportesPort: 8082
+
+# Go plugin configuration
+go:
+  baseDir: .
+  binDir: .bin
+  cgo: 0
+  monorepo: true
+  cmd: 'GOOS=linux GOARCH=amd64 go build -ldflags="-s -w"'
+  supportedRuntimes: ["provided.al2"]
+  buildProvidedRuntimeAsBootstrap: true

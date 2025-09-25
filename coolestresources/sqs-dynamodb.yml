@@ -1,0 +1,86 @@
+Resources:
+  # Colas SQS básicas
+  EmailQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ${self:service}-queue-${self:provider.stage}
+      VisibilityTimeout: 60
+
+  LoanRequestQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ${self:service}-loan-requests-${self:provider.stage}
+      VisibilityTimeout: 180
+
+  MicroserviceQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ${self:service}-microservice-updates-${self:provider.stage}
+      VisibilityTimeout: 60
+
+  ReportesEmailQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ${self:service}-reporte-diario-${self:provider.stage}
+      VisibilityTimeout: 60
+
+  SolicitudesReportesQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ${self:service}-solicitudes-reportes-${self:provider.stage}
+      VisibilityTimeout: 60
+
+  # Tabla DynamoDB básica
+  ReportesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ${self:service}-reportes-${self:provider.stage}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  # SES Email Identities
+  SESEmailIdentity:
+    Type: AWS::SES::EmailIdentity
+    Properties:
+      EmailIdentity: ${self:custom.sesFromEmail}
+      
+  SESTestEmailIdentity:
+    Type: AWS::SES::EmailIdentity
+    Properties:
+      EmailIdentity: ${self:custom.sesToEmail}
+
+Outputs:
+  EmailQueueUrl:
+    Value: !Ref EmailQueue
+    Export:
+      Name: ${self:service}-${self:provider.stage}-email-queue-url
+      
+  LoanRequestQueueUrl:
+    Value: !Ref LoanRequestQueue
+    Export:
+      Name: ${self:service}-${self:provider.stage}-loan-requests-queue-url
+      
+  MicroserviceQueueUrl:
+    Value: !Ref MicroserviceQueue
+    Export:
+      Name: ${self:service}-${self:provider.stage}-microservice-queue-url
+
+  ReportesEmailQueueUrl:
+    Value: !Ref ReportesEmailQueue
+    Export:
+      Name: ${self:service}-${self:provider.stage}-reportes-email-queue-url
+
+  SolicitudesReportesQueueUrl:
+    Value: !Ref SolicitudesReportesQueue
+    Export:
+      Name: ${self:service}-${self:provider.stage}-solicitudes-reportes-queue-url
+
+  ReportesTableName:
+    Value: !Ref ReportesTable
+    Export:
+      Name: ${self:service}-${self:provider.stage}-reportes-table-name

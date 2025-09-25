@@ -1,0 +1,117 @@
+Resources:
+  # ===== SNS TOPIC PARA NOTIFICACIONES =====
+
+  CPUAlarmsSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: ${self:service}-${self:provider.stage}-CPUs2-alarms
+      DisplayName: "CPU Alarms for ECS Services"
+
+  CPUAlarmsSNSTopicSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: email
+      TopicArn: !Ref CPUAlarmsSNSTopic
+      Endpoint: ${self:custom.alertEmail}
+
+  # ===== ALARMAS DE CPU PARA CADA MICROSERVICIO =====
+  
+  AutenticacionCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: ${self:service}-${self:provider.stage}-autenticacion-high-cpu
+      AlarmDescription: "Autenticacion service CPU utilization is above 80%"
+      MetricName: CPUUtilization
+      Namespace: AWS/ECS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      DatapointsToAlarm: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ServiceName
+          Value: !Sub "${self:service}-${self:provider.stage}-autenticacion-service"
+        - Name: ClusterName
+          Value: !Ref ECSCluster
+      AlarmActions:
+        - !Ref CPUAlarmsSNSTopic
+      OKActions:
+        - !Ref CPUAlarmsSNSTopic
+      TreatMissingData: notBreaching
+      Unit: Percent
+
+  SolicitudesCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: ${self:service}-${self:provider.stage}-solicitudes-high-cpu
+      AlarmDescription: "Solicitudes service CPU utilization is above 80%"
+      MetricName: CPUUtilization
+      Namespace: AWS/ECS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      DatapointsToAlarm: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ServiceName
+          Value: !Sub "${self:service}-${self:provider.stage}-solicitudes-service"
+        - Name: ClusterName
+          Value: !Ref ECSCluster
+      AlarmActions:
+        - !Ref CPUAlarmsSNSTopic
+      OKActions:
+        - !Ref CPUAlarmsSNSTopic
+      TreatMissingData: notBreaching
+      Unit: Percent
+
+  ReportesCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: ${self:service}-${self:provider.stage}-reportes-high-cpu
+      AlarmDescription: "Reportes service CPU utilization is above 80%"
+      MetricName: CPUUtilization
+      Namespace: AWS/ECS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      DatapointsToAlarm: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ServiceName
+          Value: !Sub "${self:service}-${self:provider.stage}-reportes-service"
+        - Name: ClusterName
+          Value: !Ref ECSCluster
+      AlarmActions:
+        - !Ref CPUAlarmsSNSTopic
+      OKActions:
+        - !Ref CPUAlarmsSNSTopic
+      TreatMissingData: notBreaching
+      Unit: Percent
+
+Outputs:
+  CPUAlarmsSNSTopicArn:
+    Description: ARN of the CPU Alarms SNS Topic
+    Value: !Ref CPUAlarmsSNSTopic
+    Export:
+      Name: ${self:service}-${self:provider.stage}-cpu-alarms-topic
+
+  AutenticacionCPUAlarmName:
+    Description: Name of the Autenticacion CPU Alarm
+    Value: !Ref AutenticacionCPUAlarm
+    Export:
+      Name: ${self:service}-${self:provider.stage}-autenticacion-cpu-alarm
+
+  SolicitudesCPUAlarmName:
+    Description: Name of the Solicitudes CPU Alarm
+    Value: !Ref SolicitudesCPUAlarm
+    Export:
+      Name: ${self:service}-${self:provider.stage}-solicitudes-cpu-alarm
+
+  ReportesCPUAlarmName:
+    Description: Name of the Reportes CPU Alarm
+    Value: !Ref ReportesCPUAlarm
+    Export:
+      Name: ${self:service}-${self:provider.stage}-reportes-cpu-alarm

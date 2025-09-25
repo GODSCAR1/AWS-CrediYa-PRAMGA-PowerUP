@@ -1,0 +1,121 @@
+Resources:
+  # ===== APPLICATION AUTOSCALING TARGETS =====
+  
+  AutenticacionScalableTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity: 3
+      MinCapacity: 1
+      ResourceId: !Sub "service/${ECSCluster}/${AutenticacionService.Name}"
+      RoleARN: !GetAtt ApplicationAutoScalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  SolicitudesScalableTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity: 3
+      MinCapacity: 1
+      ResourceId: !Sub "service/${ECSCluster}/${SolicitudesService.Name}"
+      RoleARN: !GetAtt ApplicationAutoScalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  ReportesScalableTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity: 3
+      MinCapacity: 1
+      ResourceId: !Sub "service/${ECSCluster}/${ReportesService.Name}"
+      RoleARN: !GetAtt ApplicationAutoScalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  # ===== SCALING POLICIES =====
+  
+  AutenticacionScaleUpPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: ${self:service}-${self:provider.stage}-autenticacion-scale-up
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref AutenticacionScalableTarget
+      TargetTrackingScalingPolicyConfiguration:
+        TargetValue: 70.0
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+        ScaleOutCooldown: 300
+        ScaleInCooldown: 300
+
+  SolicitudesScaleUpPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: ${self:service}-${self:provider.stage}-solicitudes-scale-up
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref SolicitudesScalableTarget
+      TargetTrackingScalingPolicyConfiguration:
+        TargetValue: 70.0
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+        ScaleOutCooldown: 300
+        ScaleInCooldown: 300
+
+  ReportesScaleUpPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: ${self:service}-${self:provider.stage}-reportes-scale-up
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref ReportesScalableTarget
+      TargetTrackingScalingPolicyConfiguration:
+        TargetValue: 70.0
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+        ScaleOutCooldown: 300
+        ScaleInCooldown: 300
+
+    # ===== APPLICATION AUTOSCALING ROLE =====
+  
+  ApplicationAutoScalingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ${self:service}-${self:provider.stage}-autoscaling-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: application-autoscaling.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ApplicationAutoScalingECSServiceRolePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecs:DescribeServices
+                  - ecs:UpdateService
+                  - cloudwatch:PutMetricAlarm
+                  - cloudwatch:DescribeAlarms
+                  - cloudwatch:GetMetricStatistics
+                  - cloudwatch:SetAlarmState
+                  - cloudwatch:DeleteAlarms
+                Resource: "*"
+
+Outputs:
+  AutenticacionScalableTargetId:
+    Description: Scalable Target ID for Autenticacion service
+    Value: !Ref AutenticacionScalableTarget
+    Export:
+      Name: ${self:service}-${self:provider.stage}-autenticacion-scalable-target
+
+  SolicitudesScalableTargetId:
+    Description: Scalable Target ID for Solicitudes service
+    Value: !Ref SolicitudesScalableTarget
+    Export:
+      Name: ${self:service}-${self:provider.stage}-solicitudes-scalable-target
+
+  ReportesScalableTargetId:
+    Description: Scalable Target ID for Reportes service
+    Value: !Ref ReportesScalableTarget
+    Export:
+      Name: ${self:service}-${self:provider.stage}-reportes-scalable-target

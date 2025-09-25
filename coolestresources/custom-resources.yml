@@ -1,0 +1,9 @@
+Resources:
+  DatabaseInitializer:
+    Type: AWS::CloudFormation::CustomResource
+    DependsOn: 
+      - RDSInstance
+      - InitDatabaseLambdaFunction
+    Properties:
+      ServiceToken: !GetAtt InitDatabaseLambdaFunction.Arn
+      TriggerOnDeploy: !Ref "AWS::StackId"  # Fuerza ejecución en cada deploy

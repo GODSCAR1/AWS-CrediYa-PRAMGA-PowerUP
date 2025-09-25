@@ -1,0 +1,62 @@
+Resources:
+  # DB Subnet Group para RDS en VPC privada
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupName: ${self:service}-${self:provider.stage}-db-subnet-group
+      DBSubnetGroupDescription: Subnet group for RDS
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      Tags:
+        - Key: Name
+          Value: ${self:service}-${self:provider.stage}-db-subnet-group
+
+  RDSInstance:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Delete
+    Properties:
+      DBInstanceIdentifier: ${self:service}-${self:provider.stage}
+      DBInstanceClass: ${self:custom.dbInstanceClass}
+      Engine: mysql
+      EngineVersion: '8.0'
+      AllocatedStorage: ${self:custom.dbAllocatedStorage}
+      StorageType: gp2
+      
+      MasterUsername: ${self:custom.dbMasterUsername}
+      MasterUserPassword: !Sub '{{resolve:secretsmanager:${self:custom.dbMasterPasswordSecretName}:SecretString:password}}'
+      
+      VPCSecurityGroups:
+        - !Ref RDSSecurityGroup
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      PubliclyAccessible: false
+      
+      BackupRetentionPeriod: 7
+      MultiAZ: false
+      StorageEncrypted: true
+      DeletionProtection: false
+
+Outputs:
+  DatabaseInstanceId:
+    Description: Database Instance ID
+    Value: !Ref RDSInstance
+    Export:
+      Name: ${self:service}-${self:provider.stage}-database-instance-id
+
+  DatabaseEndpoint:
+    Description: Database instance endpoint
+    Value: !GetAtt RDSInstance.Endpoint.Address
+    Export:
+      Name: ${self:service}-${self:provider.stage}-database-endpoint
+
+  DatabasePort:
+    Description: Database instance port
+    Value: !GetAtt RDSInstance.Endpoint.Port
+    Export:
+      Name: ${self:service}-${self:provider.stage}-database-port
+
+  DBSubnetGroupName:
+    Description: DB Subnet Group Name
+    Value: !Ref DBSubnetGroup
+    Export:
+      Name: ${self:service}-${self:provider.stage}-db-subnet-group-name

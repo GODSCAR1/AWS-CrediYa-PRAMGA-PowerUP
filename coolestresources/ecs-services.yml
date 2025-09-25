@@ -1,0 +1,66 @@
+Resources:
+  AutenticacionService:
+    Type: AWS::ECS::Service
+    DependsOn: AutenticacionListenerRule
+    Properties:
+      ServiceName: ${self:service}-${self:provider.stage}-autenticacion-service
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref AutenticacionTaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          SecurityGroups:
+            - !Ref ECSTaskSecurityGroup
+          Subnets:
+            - !Ref PrivateSubnet1
+            - !Ref PrivateSubnet2
+          AssignPublicIp: DISABLED
+      LoadBalancers:
+        - TargetGroupArn: !Ref AutenticacionTargetGroup
+          ContainerName: autenticacion-container
+          ContainerPort: ${self:custom.autenticacionPort}
+
+  SolicitudesService:
+    Type: AWS::ECS::Service
+    DependsOn: SolicitudesListenerRule
+    Properties:
+      ServiceName: ${self:service}-${self:provider.stage}-solicitudes-service
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref SolicitudesTaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          SecurityGroups:
+            - !Ref ECSTaskSecurityGroup
+          Subnets:
+            - !Ref PrivateSubnet1
+            - !Ref PrivateSubnet2
+          AssignPublicIp: DISABLED
+      LoadBalancers:
+        - TargetGroupArn: !Ref SolicitudesTargetGroup
+          ContainerName: solicitudes-container
+          ContainerPort: ${self:custom.solicitudesPort}
+
+  ReportesService:
+    Type: AWS::ECS::Service
+    DependsOn: ReportesListenerRule
+    Properties:
+      ServiceName: ${self:service}-${self:provider.stage}-reportes-service
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref ReportesTaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          SecurityGroups:
+            - !Ref ECSTaskSecurityGroup
+          Subnets:
+            - !Ref PrivateSubnet1
+            - !Ref PrivateSubnet2
+          AssignPublicIp: DISABLED
+      LoadBalancers:
+        - TargetGroupArn: !Ref ReportesTargetGroup
+          ContainerName: reportes-container
+          ContainerPort: ${self:custom.reportesPort}

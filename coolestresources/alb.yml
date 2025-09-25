@@ -1,0 +1,212 @@
+Resources:
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: ${self:service}-${self:provider.stage}-internal-alb
+      Type: application
+      Scheme: internal
+      SecurityGroups:
+        - !Ref ALBSecurityGroup
+      Subnets:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+
+  # Target Groups
+  AutenticacionTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: ${self:service}-${self:provider.stage}-auth-tg
+      Port: ${self:custom.autenticacionPort}
+      Protocol: HTTP
+      TargetType: ip
+      VpcId: !Ref PrivateVPC
+      HealthCheckEnabled: true
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: /actuator/health
+      HealthCheckPort: traffic-port
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+      Matcher:
+        HttpCode: '200'
+
+  SolicitudesTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: ${self:service}-${self:provider.stage}-solic-tg
+      Port: ${self:custom.solicitudesPort}
+      Protocol: HTTP
+      TargetType: ip
+      VpcId: !Ref PrivateVPC
+      HealthCheckEnabled: true
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: /actuator/health
+      HealthCheckPort: traffic-port
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+      Matcher:
+        HttpCode: '200'
+
+  ReportesTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: ${self:service}-${self:provider.stage}-rep-tg
+      Port: ${self:custom.reportesPort}
+      Protocol: HTTP
+      TargetType: ip
+      VpcId: !Ref PrivateVPC
+      HealthCheckEnabled: true
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: /actuator/health
+      HealthCheckPort: traffic-port
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+      Matcher:
+        HttpCode: '200'
+
+  # Listeners
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: fixed-response
+          FixedResponseConfig:
+            StatusCode: 404
+            ContentType: application/json
+            MessageBody: '{"error": "Route not found"}'
+
+  AutenticacionListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref ALBListener
+      Priority: 50
+      Conditions:
+        - Field: path-pattern
+          Values:
+            - '/api/v1/login'
+            - '/api/v1/login/*'
+            - '/api/v1/usuario'
+            - '/api/v1/usuario/*'
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref AutenticacionTargetGroup
+
+  SolicitudesListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref ALBListener
+      Priority: 60
+      Conditions:
+        - Field: path-pattern
+          Values:
+            - '/api/v1/solicitud'
+            - '/api/v1/solicitud/*'
+            - '/api/v1/solicitud/aprove/*'
+            - '/api/v1/solicitud/reject/*'
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref SolicitudesTargetGroup
+
+  ReportesListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref ALBListener
+      Priority: 70
+      Conditions:
+        - Field: path-pattern
+          Values:
+            - '/api/v1/reporte'
+            - '/api/v1/reporte/*'
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref ReportesTargetGroup
+  
+  # Swagger para Autenticación
+  AutenticacionSwaggerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref ALBListener
+      Priority: 30
+      Conditions:
+        - Field: path-pattern
+          Values:
+            - '/autenticacion/swagger-ui*'
+            - '/autenticacion/swagger-ui/*'
+            - '/autenticacion/v3/api-docs*'
+            - '/autenticacion/v3/api-docs/*'
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref AutenticacionTargetGroup
+
+  # Swagger para Solicitudes
+  SolicitudesSwaggerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref ALBListener
+      Priority: 40
+      Conditions:
+        - Field: path-pattern
+          Values:
+            - '/solicitudes/swagger-ui*'
+            - '/solicitudes/swagger-ui/*'
+            - '/solicitudes/v3/api-docs*'
+            - '/solicitudes/v3/api-docs/*'
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref SolicitudesTargetGroup
+
+  # Swagger para Reportes
+  ReportesSwaggerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref ALBListener
+      Priority: 45
+      Conditions:
+        - Field: path-pattern
+          Values:
+            - '/reportes/swagger-ui*'
+            - '/reportes/swagger-ui/*'
+            - '/reportes/v3/api-docs*'
+            - '/reportes/v3/api-docs/*'
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref ReportesTargetGroup
+
+Outputs:
+  ApplicationLoadBalancerArn:
+    Description: ARN of the Application Load Balancer
+    Value: !Ref ApplicationLoadBalancer
+    Export:
+      Name: ${self:service}-${self:provider.stage}-alb-arn
+
+  ApplicationLoadBalancerDNSName:
+    Description: DNS name of the Application Load Balancer
+    Value: !GetAtt ApplicationLoadBalancer.DNSName
+    Export:
+      Name: ${self:service}-${self:provider.stage}-alb-dns-name
+
+  AutenticacionTargetGroupArn:
+    Description: ARN of the Autenticacion Target Group
+    Value: !Ref AutenticacionTargetGroup
+    Export:
+      Name: ${self:service}-${self:provider.stage}-auth-tg-arn
+
+  SolicitudesTargetGroupArn:
+    Description: ARN of the Solicitudes Target Group
+    Value: !Ref SolicitudesTargetGroup
+    Export:
+      Name: ${self:service}-${self:provider.stage}-solic-tg-arn
+
+  ReportesTargetGroupArn:
+    Description: ARN of the Reportes Target Group
+    Value: !Ref ReportesTargetGroup
+    Export:
+      Name: ${self:service}-${self:provider.stage}-reportes-tg-arn

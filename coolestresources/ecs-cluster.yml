@@ -1,0 +1,507 @@
+Resources:
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: ${self:service}-${self:provider.stage}-cluster
+      CapacityProviders:
+        - FARGATE
+      DefaultCapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Weight: 1
+
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ${self:service}-${self:provider.stage}-ecs-execution-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: SecretsManagerAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  # R2DBC secrets (usados por Autenticacion y Solicitudes)
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-r2dbc-host*"
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-r2dbc-port*"
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-r2dbc-username*"
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-r2dbc-password*"
+                  # JWT secrets (usados por Autenticacion)
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-jwt-secret-key*"
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-jwt-expiration*"
+                  # ALB DNS (usado por Solicitudes)
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-alb-dns*"
+                  # SQS URLs (usados por Solicitudes y Reportes)
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-sqs-notificaciones-url*"
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-sqs-capacidad-endeudamiento-url*"
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-sqs-notificaciones-solicitud-url*"
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-sqs-reportes-url*"
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-sqs-reporte-diario-url*"
+                  # DynamoDB Table Name (usado por Reportes)
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-reportes-${self:provider.stage}*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/ecs/${self:service}-${self:provider.stage}/*"
+
+  # Roles específicos por microservicio
+  AutenticacionTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ${self:service}-${self:provider.stage}-autenticacion-task-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AutenticacionPermissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  # R2DBC secrets que SÍ usa
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-r2dbc-host*"
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-r2dbc-port*"
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-r2dbc-username*"
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-r2dbc-password*"
+                  # JWT secrets que SÍ usa
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-jwt-secret-key*"
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-jwt-expiration*"
+
+  SolicitudesTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ${self:service}-${self:provider.stage}-solicitudes-task-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SolicitudesPermissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  # R2DBC secrets que SÍ usa
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-r2dbc-host*"
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-r2dbc-port*"
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-r2dbc-username*"
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-r2dbc-password*"
+                  # ALB DNS que SÍ usa
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-alb-dns*"
+                  # SQS URLs que SÍ usa
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-sqs-notificaciones-url*"
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-sqs-capacidad-endeudamiento-url*"
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-sqs-notificaciones-solicitud-url*"
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-sqs-reportes-url*"
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                Resource:
+                  - !GetAtt EmailQueue.Arn
+                  - !GetAtt LoanRequestQueue.Arn
+                  - !GetAtt MicroserviceQueue.Arn
+                  - !GetAtt SolicitudesReportesQueue.Arn
+
+  ReportesTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ${self:service}-${self:provider.stage}-reportes-task-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ReportesPermissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  # SQS URLs que SÍ usa
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-sqs-reportes-url*"
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-${self:provider.stage}-sqs-reporte-diario-url*"
+                  # DynamoDB Table Name que SÍ usa
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${self:service}-reportes-${self:provider.stage}*"
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:SendMessage
+                  - sqs:GetQueueAttributes
+                Resource:
+                  - !GetAtt SolicitudesReportesQueue.Arn
+                  - !GetAtt ReportesEmailQueue.Arn
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt ReportesTable.Arn
+
+  # Log Groups
+  AutenticacionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/ecs/${self:service}-${self:provider.stage}/autenticacion"
+      RetentionInDays: 14
+
+  SolicitudesLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/ecs/${self:service}-${self:provider.stage}/solicitudes"
+      RetentionInDays: 14
+
+  ReportesLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/ecs/${self:service}-${self:provider.stage}/reportes"
+      RetentionInDays: 14
+
+  # ===== TASK DEFINITIONS =====
+  
+  # Task Definition para Autenticación
+  AutenticacionTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: ${self:service}-${self:provider.stage}-autenticacion-task
+      Cpu: 256
+      Memory: 512
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !Ref ECSTaskExecutionRole
+      TaskRoleArn: !Ref AutenticacionTaskRole
+      ContainerDefinitions:
+        - Name: autenticacion-container
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/crediya-dev-autenticacion:latest"
+          Essential: true
+          PortMappings:
+            - ContainerPort: ${self:custom.autenticacionPort}
+              Protocol: tcp
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref AutenticacionLogGroup
+              awslogs-region: ${self:provider.region}
+              awslogs-stream-prefix: ecs
+          Environment:
+            - Name: STAGE
+              Value: ${self:provider.stage}
+            - Name: SERVER_PORT
+              Value: ${self:custom.autenticacionPort}
+            - Name: SPRING_APPLICATION_NAME
+              Value: AUTENTICACION
+            - Name: SPRING_DEVTOOLS_ADD_PROPERTIES
+              Value: "false"
+            - Name: AWS_REGION
+              Value: ${self:provider.region}
+            - Name: R2DBC_DATABASE
+              Value: autenticacion
+            - Name: BCRYPT_STRENGTH
+              Value: ${self:custom.bcryptStrength}
+            - Name: CORS_ALLOWED_ORIGINS
+              Value: "*"
+            - Name: ROUTES_LOGIN_PATH
+              Value: /api/v1/login
+            - Name: ROUTES_CREATE_USUARIO_PATH
+              Value: /api/v1/usuario
+            - Name: ROUTES_SEARCH_USUARIO_BY_EMAILS_PATH
+              Value: /api/v1/usuario/emails
+            - Name: SPRINGDOC_API_DOCS_ENABLED
+              Value: "true"
+            - Name: SPRINGDOC_SWAGGER_UI_ENABLED
+              Value: "true"
+            - Name: SPRINGDOC_API_DOCS_PATH
+              Value: /autenticacion/v3/api-docs
+            - Name: SPRINGDOC_SWAGGER_UI_PATH
+              Value: /autenticacion/swagger-ui.html
+            - Name: SPRINGDOC_SWAGGER_UI_CONFIG_URL
+              Value: /autenticacion/v3/api-docs/swagger-config
+            - Name: SPRINGDOC_SWAGGER_UI_URL
+              Value: /autenticacion/v3/api-docs
+            - Name: SPRINGDOC_OPENAPI_SERVERS_0_URL
+              Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+            - Name: SPRINGDOC_OPENAPI_SERVERS_0_DESCRIPTION
+              Value: "API Gateway"
+            - Name: SPRINGDOC_SWAGGER_UI_SERVERS_0_URL
+              Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+            - Name: SPRINGDOC_SWAGGER_UI_SERVERS_0_DESCRIPTION
+              Value: "API Gateway"
+          Secrets:
+            - Name: R2DBC_HOST
+              ValueFrom: !Ref R2DBCHostSecret
+            - Name: R2DBC_PORT
+              ValueFrom: !Ref R2DBCPortSecret
+            - Name: R2DBC_USERNAME
+              ValueFrom: !Ref R2DBCUsernameSecret
+            - Name: R2DBC_PASSWORD
+              ValueFrom: !Ref R2DBCPasswordSecret
+            - Name: JWT_SECRET
+              ValueFrom: !Ref JWTSecretKey
+            - Name: JWT_EXPIRATION
+              ValueFrom: !Ref JWTExpirationSecret
+
+  # Task Definition para Solicitudes
+  SolicitudesTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: ${self:service}-${self:provider.stage}-solicitudes-task
+      Cpu: 256
+      Memory: 512
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !Ref ECSTaskExecutionRole
+      TaskRoleArn: !Ref SolicitudesTaskRole
+      ContainerDefinitions:
+        - Name: solicitudes-container
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/crediya-dev-solicitudes:latest"
+          Essential: true
+          PortMappings:
+            - ContainerPort: ${self:custom.solicitudesPort}
+              Protocol: tcp
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref SolicitudesLogGroup
+              awslogs-region: ${self:provider.region}
+              awslogs-stream-prefix: ecs
+          Environment:
+            - Name: STAGE
+              Value: ${self:provider.stage}
+            - Name: SERVER_PORT
+              Value: ${self:custom.solicitudesPort}
+            - Name: SPRING_APPLICATION_NAME
+              Value: SOLICITUDES
+            - Name: SPRING_DEVTOOLS_ADD_PROPERTIES
+              Value: "false"
+            - Name: AWS_REGION
+              Value: ${self:provider.region}
+            - Name: R2DBC_DATABASE
+              Value: solicitudes
+            - Name: CORS_ALLOWED_ORIGINS
+              Value: "*"
+            - Name: ROUTES_CREATE_SOLICITUD
+              Value: /api/v1/solicitud
+            - Name: ROUTES_GET_SOLICITUDES
+              Value: /api/v1/solicitud/{nombreEstado}
+            - Name: ROUTES_APROVE_SOLICITUD
+              Value: /api/v1/solicitud/aprove/{id}
+            - Name: ROUTES_REJECT_SOLICITUD
+              Value: /api/v1/solicitud/reject/{id}
+            - Name: ADAPTER_RESTCONSUMER_USUARIO_SEARCH_ENDPOINT
+              Value: /api/v1/usuario/emails
+            - Name: SPRINGDOC_API_DOCS_ENABLED
+              Value: "true"
+            - Name: SPRINGDOC_SWAGGER_UI_ENABLED
+              Value: "true"
+            - Name: SPRINGDOC_API_DOCS_PATH
+              Value: /solicitudes/v3/api-docs
+            - Name: SPRINGDOC_SWAGGER_UI_PATH
+              Value: /solicitudes/swagger-ui.html
+            - Name: SPRINGDOC_SWAGGER_UI_CONFIG_URL
+              Value: /solicitudes/v3/api-docs/swagger-config
+            - Name: SPRINGDOC_SWAGGER_UI_URL
+              Value: /solicitudes/v3/api-docs
+            - Name: SPRINGDOC_OPENAPI_SERVERS_0_URL
+              Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+            - Name: SPRINGDOC_OPENAPI_SERVERS_0_DESCRIPTION
+              Value: "API Gateway"
+            - Name: SPRINGDOC_SWAGGER_UI_SERVERS_0_URL
+              Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+            - Name: SPRINGDOC_SWAGGER_UI_SERVERS_0_DESCRIPTION
+              Value: "API Gateway"
+          Secrets:
+            - Name: R2DBC_HOST
+              ValueFrom: !Ref R2DBCHostSecret
+            - Name: R2DBC_PORT
+              ValueFrom: !Ref R2DBCPortSecret
+            - Name: R2DBC_USERNAME
+              ValueFrom: !Ref R2DBCUsernameSecret
+            - Name: R2DBC_PASSWORD
+              ValueFrom: !Ref R2DBCPasswordSecret
+            - Name: ADAPTER_RESTCONSUMER_URL
+              ValueFrom: !Ref ALBDNSName
+            - Name: AWS_SQS_NOTIFICACIONES_QUEUE_URL
+              ValueFrom: !Ref SQSNotificacionesURL
+            - Name: AWS_SQS_CAPACIDAD_ENDEUDAMIENTO_QUEUE_URL
+              ValueFrom: !Ref SQSCapacidadEndeudamientoURL
+            - Name: AWS_SQS_NOTIFICACIONES_SOLICITUD_URL
+              ValueFrom: !Ref SQSNotificacionesSolicitudURL
+            - Name: AWS_SQS_REPORTES_QUEUE_URL
+              ValueFrom: !Ref SQSReportesURL
+          
+
+  # Task Definition para Reportes
+  ReportesTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: ${self:service}-${self:provider.stage}-reportes-task
+      Cpu: 256
+      Memory: 512
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !Ref ECSTaskExecutionRole
+      TaskRoleArn: !Ref ReportesTaskRole
+      ContainerDefinitions:
+        - Name: reportes-container
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/crediya-dev-reportes:latest"
+          Essential: true
+          PortMappings:
+            - ContainerPort: ${self:custom.reportesPort}
+              Protocol: tcp
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref ReportesLogGroup
+              awslogs-region: ${self:provider.region}
+              awslogs-stream-prefix: ecs
+          Environment:
+            - Name: STAGE
+              Value: ${self:provider.stage}
+            - Name: SERVER_PORT
+              Value: ${self:custom.reportesPort}
+            - Name: SPRING_APPLICATION_NAME
+              Value: REPORTES
+            - Name: SPRING_PROFILES_ACTIVE
+              Value: dev
+            - Name: AWS_REGION
+              Value: ${self:provider.region}
+            - Name: AWS_DYNAMODB_ENDPOINT
+              Value: !Sub "https://dynamodb.${AWS::Region}.amazonaws.com"
+            - Name: CORS_ALLOWED_ORIGINS
+              Value: "*"
+            - Name: ROUTES_GET_REPORTE
+              Value: /api/v1/reporte
+            - Name: SPRINGDOC_API_DOCS_ENABLED
+              Value: "true"
+            - Name: SPRINGDOC_SWAGGER_UI_ENABLED
+              Value: "true"
+            - Name: SPRINGDOC_API_DOCS_PATH
+              Value: /reportes/v3/api-docs
+            - Name: SPRINGDOC_SWAGGER_UI_PATH
+              Value: /reportes/swagger-ui.html
+            - Name: SPRINGDOC_SWAGGER_UI_CONFIG_URL
+              Value: /reportes/v3/api-docs/swagger-config
+            - Name: SPRINGDOC_SWAGGER_UI_URL
+              Value: /reportes/v3/api-docs
+            - Name: SPRINGDOC_OPENAPI_SERVERS_0_URL
+              Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+            - Name: SPRINGDOC_OPENAPI_SERVERS_0_DESCRIPTION
+              Value: "API Gateway"
+            - Name: SPRINGDOC_SWAGGER_UI_SERVERS_0_URL
+              Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+            - Name: SPRINGDOC_SWAGGER_UI_SERVERS_0_DESCRIPTION
+              Value: "API Gateway"
+          Secrets:
+            - Name: AWS_SQS_REPORTES_QUEUE_URL
+              ValueFrom: !Ref SQSReportesURL
+            - Name: AWS_SQS_REPORTE_DIARIO_QUEUE_URL
+              ValueFrom: !Ref SQSReporteDiarioURL
+            - Name: AWS_DYNAMODB_REPORTES_TABLE_NAME
+              ValueFrom: !Ref DynamoDBReportesTableName
+
+Outputs:
+  ECSClusterName:
+    Description: Name of the ECS cluster
+    Value: !Ref ECSCluster
+    Export:
+      Name: ${self:service}-${self:provider.stage}-ecs-cluster-name
+
+  ECSTaskExecutionRoleArn:
+    Description: ARN of the ECS task execution role
+    Value: !GetAtt ECSTaskExecutionRole.Arn
+    Export:
+      Name: ${self:service}-${self:provider.stage}-ecs-execution-role-arn
+
+  AutenticacionTaskRoleArn:
+    Description: ARN of the Autenticacion task role
+    Value: !GetAtt AutenticacionTaskRole.Arn
+    Export:
+      Name: ${self:service}-${self:provider.stage}-autenticacion-task-role-arn
+
+  SolicitudesTaskRoleArn:
+    Description: ARN of the Solicitudes task role
+    Value: !GetAtt SolicitudesTaskRole.Arn
+    Export:
+      Name: ${self:service}-${self:provider.stage}-solicitudes-task-role-arn
+
+  ReportesTaskRoleArn:
+    Description: ARN of the Reportes task role
+    Value: !GetAtt ReportesTaskRole.Arn
+    Export:
+      Name: ${self:service}-${self:provider.stage}-reportes-task-role-arn
+
+  AutenticacionLogGroupName:
+    Description: CloudWatch Log Group for Autenticacion service
+    Value: !Ref AutenticacionLogGroup
+    Export:
+      Name: ${self:service}-${self:provider.stage}-autenticacion-log-group
+
+  SolicitudesLogGroupName:
+    Description: CloudWatch Log Group for Solicitudes service
+    Value: !Ref SolicitudesLogGroup
+    Export:
+      Name: ${self:service}-${self:provider.stage}-solicitudes-log-group
+
+  ReportesLogGroupName:
+    Description: CloudWatch Log Group for Reportes service
+    Value: !Ref ReportesLogGroup
+    Export:
+      Name: ${self:service}-${self:provider.stage}-reportes-log-group
+
+  AutenticacionTaskDefinitionArn:
+    Description: ARN of the Autenticacion Task Definition
+    Value: !Ref AutenticacionTaskDefinition
+    Export:
+      Name: ${self:service}-${self:provider.stage}-autenticacion-task-def-arn
+
+  SolicitudesTaskDefinitionArn:
+    Description: ARN of the Solicitudes Task Definition
+    Value: !Ref SolicitudesTaskDefinition
+    Export:
+      Name: ${self:service}-${self:provider.stage}-solicitudes-task-def-arn
+
+  ReportesTaskDefinitionArn:
+    Description: ARN of the Reportes Task Definition
+    Value: !Ref ReportesTaskDefinition
+    Export:
+      Name: ${self:service}-${self:provider.stage}-reportes-task-def-arn

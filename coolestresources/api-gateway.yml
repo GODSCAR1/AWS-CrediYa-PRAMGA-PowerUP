@@ -1,0 +1,85 @@
+Resources:
+  # ===== HTTP API (igual que antes) =====
+  HttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: ${self:service}-${self:provider.stage}-http-api
+      Description: HTTP API with Lambda proxy for internal ALB
+      ProtocolType: HTTP
+      CorsConfiguration:
+        AllowCredentials: false
+        AllowHeaders:
+          - "*"
+        AllowMethods:
+          - "*"
+        AllowOrigins:
+          - "*"
+        ExposeHeaders:
+          - "*"
+        MaxAge: 300
+
+  # ===== PERMISO PARA QUE API GATEWAY INVOQUE LA LAMBDA =====
+  ProxyLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ProxyLambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*"
+
+  # ===== INTEGRATION CON LAMBDA PROXY =====
+  ProxyIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ProxyLambdaFunction.Arn}/invocations"
+      PayloadFormatVersion: '2.0'
+
+  # ===== RUTAS =====
+  # Ruta catch-all que maneja TODAS las requests
+  ProxyRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'ANY /{proxy+}'
+      Target: !Sub "integrations/${ProxyIntegration}"
+
+  # Ruta para root path
+  RootRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'ANY /'
+      Target: !Sub "integrations/${ProxyIntegration}"
+
+  # ===== STAGE (DEPLOYMENT) =====
+  HttpApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref HttpApi
+      StageName: $default
+      AutoDeploy: true
+      AccessLogSettings:
+        DestinationArn: !GetAtt ApiGatewayLogGroup.Arn
+        Format: '$context.requestId $context.status $context.error.message'
+
+  # ===== CLOUDWATCH LOGS =====
+  ApiGatewayLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/apigateway/${self:service}-${self:provider.stage}-http-api"
+      RetentionInDays: 14
+
+Outputs:
+  HttpApiId:
+    Description: ID of the HTTP API
+    Value: !Ref HttpApi
+    Export:
+      Name: ${self:service}-${self:provider.stage}-http-api-id
+
+  HttpApiUrl:
+    Description: URL of the HTTP API
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+    Export:
+      Name: ${self:service}-${self:provider.stage}-http-api-url

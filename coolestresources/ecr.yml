@@ -1,0 +1,94 @@
+Resources:
+  AutenticacionECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: ${self:service}-${self:provider.stage}-autenticacion
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep last 10 images",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 10
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
+
+  SolicitudesECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: ${self:service}-${self:provider.stage}-solicitudes
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep last 10 images",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 10
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
+
+  ReportesECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: ${self:service}-${self:provider.stage}-reportes
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep last 10 images",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 10
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
+
+Outputs:
+  AutenticacionECRRepositoryUri:
+    Description: URI del repositorio ECR para autenticación
+    Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AutenticacionECRRepository}"
+    Export:
+      Name: ${self:service}-${self:provider.stage}-autenticacion-ecr-uri
+
+  SolicitudesECRRepositoryUri:
+    Description: URI del repositorio ECR para solicitudes
+    Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${SolicitudesECRRepository}"
+    Export:
+      Name: ${self:service}-${self:provider.stage}-solicitudes-ecr-uri
+
+  ReportesECRRepositoryUri:
+    Description: URI del repositorio ECR para reportes
+    Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ReportesECRRepository}"
+    Export:
+      Name: ${self:service}-${self:provider.stage}-reportes-ecr-uri

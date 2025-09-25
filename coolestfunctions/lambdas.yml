@@ -1,0 +1,60 @@
+proxy:
+  handler: LAMBDA-AUTHORIZER/main.go
+  timeout: 30
+  environment:
+    STAGE: ${self:provider.stage}
+    ALB_URL: !Sub "http://${ApplicationLoadBalancer.DNSName}"
+  vpc:
+    securityGroupIds:
+      - !Ref LambdaSecurityGroup
+    subnetIds:
+      - !Ref PrivateSubnet1
+      - !Ref PrivateSubnet2
+
+initDatabase:
+  handler: LAMBDA-DBINIT/main.go
+  timeout: 600
+  environment:
+    DB_MASTER_SECRET: ${self:custom.dbMasterPasswordSecretName}
+    APP_USERNAME: ${self:custom.appUsername}
+    APP_PASSWORD: ${self:custom.appPassword}
+    DB_HOST: !GetAtt RDSInstance.Endpoint.Address
+    DB_PORT: !GetAtt RDSInstance.Endpoint.Port
+  vpc:
+    securityGroupIds:
+      - !Ref LambdaSecurityGroup
+    subnetIds:
+      - !Ref PrivateSubnet1
+      - !Ref PrivateSubnet2
+
+notificaciones:
+  handler: LAMBDA-NOTIFICACIONES/main.go
+  timeout: 30
+  environment:
+    SES_FROM_EMAIL: ${self:custom.sesFromEmail}
+  events:
+    - sqs:
+        arn: !GetAtt EmailQueue.Arn
+        batchSize: 1
+
+capacidad-endeudamiento:
+  handler: LAMBDA-CAPACIDAD-ENDEUDAMIENTO/main.go
+  timeout: 60
+  environment:
+    SES_FROM_EMAIL: ${self:custom.sesFromEmail}
+    MICROSERVICE_QUEUE_URL: !Ref MicroserviceQueue
+  events:
+    - sqs:
+        arn: !GetAtt LoanRequestQueue.Arn
+        batchSize: 1
+
+reportes:
+  handler: LAMBDA-REPORTES/main.go
+  timeout: 60
+  environment:
+    EMAIL_FROM: ${self:custom.sesFromEmail}
+    EMAIL_TO: ${self:custom.sesToEmail}
+  events:
+    - sqs:
+        arn: !GetAtt ReportesEmailQueue.Arn
+        batchSize: 1

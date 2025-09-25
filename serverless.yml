@@ -1,0 +1,112 @@
+
+service: crediya
+
+frameworkVersion: '3'
+
+custom: ${file(coolestvariables/common.yml)}
+
+provider:
+  name: aws
+  runtime: provided.al2
+  region: 'us-east-1'
+  stage: 'dev'
+  environment:
+    STAGE: ${self:provider.stage}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - rds:DescribeDBInstances
+            - secretsmanager:GetSecretValue
+            - lambda:DeleteFunction
+            - ecr:GetAuthorizationToken
+            - ecr:BatchCheckLayerAvailability
+            - ecr:GetDownloadUrlForLayer
+            - ecr:BatchGetImage
+            - ecr:PutImage
+            - ecr:InitiateLayerUpload
+            - ecr:UploadLayerPart
+            - ecr:CompleteLayerUpload
+            - sqs:ReceiveMessage
+            - sqs:DeleteMessage
+            - sqs:SendMessage
+            - sqs:GetQueueAttributes
+            - ses:SendEmail
+            - ses:SendRawEmail
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:Query
+            - dynamodb:Scan
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+             # NUEVOS PERMISOS PARA AUTOSCALING
+            - application-autoscaling:RegisterScalableTarget
+            - application-autoscaling:DeregisterScalableTarget
+            - application-autoscaling:DescribeScalableTargets
+            - application-autoscaling:DescribeScalingActivities
+            - application-autoscaling:DescribeScalingPolicies
+            - application-autoscaling:PutScalingPolicy
+            - application-autoscaling:DeleteScalingPolicy
+            - ecs:DescribeServices
+            - ecs:UpdateService
+            - ecs:DescribeClusters
+            - ecs:DescribeTaskDefinition
+            # NUEVOS PERMISOS PARA CLOUDWATCH
+            - cloudwatch:PutMetricAlarm
+            - cloudwatch:DescribeAlarms
+            - cloudwatch:DeleteAlarms
+            - cloudwatch:GetMetricStatistics
+            - cloudwatch:ListMetrics
+            - cloudwatch:PutMetricData
+            - cloudwatch:GetMetricData
+            # NUEVOS PERMISOS PARA SNS
+            - sns:CreateTopic
+            - sns:Subscribe
+            - sns:Unsubscribe
+            - sns:Publish
+            - sns:DeleteTopic
+            - sns:GetTopicAttributes
+            - sns:SetTopicAttributes
+            - sns:ListTopics
+            - sns:ListSubscriptionsByTopic
+            - sns:GetSubscriptionAttributes
+            - sns:SetSubscriptionAttributes
+             # PERMISOS PARA IAM Y API GATEWAY
+            - iam:PassRole
+            - iam:CreateServiceLinkedRole
+            - iam:GetRole
+            - apigateway:*
+            - execute-api:Invoke
+            - execute-api:ManageConnections
+            # NUEVOS PERMISOS PARA VPC (para Lambda functions)
+            - ec2:CreateNetworkInterface
+            - ec2:DescribeNetworkInterfaces
+            - ec2:DeleteNetworkInterface
+            - ec2:AttachNetworkInterface
+            - ec2:DetachNetworkInterface
+            - ec2:ModifyNetworkInterfaceAttribute
+            - ec2:ResetNetworkInterfaceAttribute
+          Resource: "*"
+
+functions: ${file(coolestfunctions/lambdas.yml)}
+
+resources:
+  - ${file(coolestresources/vpc.yml)}
+  - ${file(coolestresources/security-groups.yml)}
+  - ${file(coolestresources/secrets.yml)}
+  - ${file(coolestresources/rds.yml)}
+  - ${file(coolestresources/sqs-dynamodb.yml)}
+  - ${file(coolestresources/ecs-cluster.yml)}
+  - ${file(coolestresources/alb.yml)}
+  - ${file(coolestresources/ecs-services.yml)}
+  - ${file(coolestresources/api-gateway.yml)}
+  - ${file(coolestresources/autoscaling.yml)}           
+  - ${file(coolestresources/cloudwatch-alarms.yml)}     
+  - ${file(coolestresources/custom-resources.yml)}
+
+plugins:
+  - serverless-go-plugin

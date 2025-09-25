@@ -1,0 +1,129 @@
+Resources:
+  # Security Group para RDS
+  RDSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for RDS MySQL
+      VpcId: !Ref PrivateVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId: !Ref ECSTaskSecurityGroup
+          Description: MySQL access from ECS tasks
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId: !Ref LambdaSecurityGroup
+          Description: MySQL access from Lambda
+      Tags:
+        - Key: Name
+          Value: ${self:service}-${self:provider.stage}-rds-sg
+        - Key: Environment
+          Value: ${self:provider.stage}
+
+  # Security Group para ECS Tasks
+  ECSTaskSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for ECS tasks
+      VpcId: !Ref PrivateVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+          Description: HTTP from ALB
+        - IpProtocol: tcp
+          FromPort: 8081
+          ToPort: 8081
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+          Description: HTTP from ALB
+        - IpProtocol: tcp
+          FromPort: 8082
+          ToPort: 8082
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+          Description: HTTP from ALB
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: All outbound traffic
+      Tags:
+        - Key: Name
+          Value: ${self:service}-${self:provider.stage}-ecs-tasks-sg
+        - Key: Environment
+          Value: ${self:provider.stage}
+
+  # Security Group para ALB (INTERNO)
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Internal Application Load Balancer
+      VpcId: !Ref PrivateVPC
+      SecurityGroupIngress:
+      # Permitir desde Lambda proxy si está en VPC
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        SourceSecurityGroupId: !Ref LambdaSecurityGroup
+        Description: "HTTP from Lambda proxy"
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: All outbound traffic
+      Tags:
+        - Key: Name
+          Value: ${self:service}-${self:provider.stage}-alb-sg
+        - Key: Environment
+          Value: ${self:provider.stage}
+
+  # Security Group para Lambda Functions
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Lambda functions in VPC
+      VpcId: !Ref PrivateVPC
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: All outbound traffic
+      Tags:
+        - Key: Name
+          Value: ${self:service}-${self:provider.stage}-lambda-sg
+        - Key: Environment
+          Value: ${self:provider.stage}
+  
+  ALBFromECSRule:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref ALBSecurityGroup
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      SourceSecurityGroupId: !Ref ECSTaskSecurityGroup
+      Description: "HTTP from ECS tasks"
+
+Outputs:
+  RDSSecurityGroupId:
+    Description: Security Group ID for RDS database
+    Value: !Ref RDSSecurityGroup
+    Export:
+      Name: ${self:service}-${self:provider.stage}-database-sg-id
+
+  ECSTaskSecurityGroupId:
+    Description: Security Group ID for ECS tasks
+    Value: !Ref ECSTaskSecurityGroup
+    Export:
+      Name: ${self:service}-${self:provider.stage}-ecs-tasks-sg-id
+
+  ALBSecurityGroupId:
+    Description: Security Group ID for ALB
+    Value: !Ref ALBSecurityGroup
+    Export:
+      Name: ${self:service}-${self:provider.stage}-alb-sg-id
+
+  LambdaSecurityGroupId:
+    Description: Security Group ID for Lambda functions
+    Value: !Ref LambdaSecurityGroup
+    Export:
+      Name: ${self:service}-${self:provider.stage}-lambda-sg-id

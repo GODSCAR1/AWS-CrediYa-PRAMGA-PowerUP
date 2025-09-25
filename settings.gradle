@@ -34,3 +34,5 @@ include ':sqs-sender-capacidad-endeudamiento'
 project(':sqs-sender-capacidad-endeudamiento').projectDir = file('./infrastructure/driven-adapters/sqs-sender-capacidad-endeudamiento')
 include ':sqs-listener-capacidad-endeudamiento'
 project(':sqs-listener-capacidad-endeudamiento').projectDir = file('./infrastructure/entry-points/sqs-listener-capacidad-endeudamiento')
+include ':sqs-sender-reportes'
+project(':sqs-sender-reportes').projectDir = file('./infrastructure/driven-adapters/sqs-sender-reportes')

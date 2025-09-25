@@ -37,6 +37,12 @@ adapter:
     capacidad-endeudamiento:
       region: "${AWS_REGION:us-east-1}"
       queueUrl: "${AWS_SQS_CAPACIDAD_ENDEUDAMIENTO_QUEUE_URL:http://localhost:4566/000000000000/sample}"
+    reportes:
+      region: "${AWS_REGION:us-east-1}"
+      queueUrl: "${AWS_SQS_REPORTES_QUEUE_URL:http://localhost:4566/000000000000/sample}"
+    region: "us-east-1"
+    queueUrl: "http://localhost:4566/000000000000/sample"
+    endpoint: "http://localhost:4566 # For localstack only"
 management:
   endpoints:
     web:

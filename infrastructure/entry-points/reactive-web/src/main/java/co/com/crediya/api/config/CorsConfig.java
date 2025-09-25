@@ -17,7 +17,7 @@ public class CorsConfig {
     CorsWebFilter corsWebFilter(@Value("${cors.allowed-origins}") String origins) {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.setAllowedOrigins(List.of(origins.split(",")));
+        config.setAllowedOriginPatterns(List.of(origins.split(",")));
         config.setAllowedMethods(Arrays.asList("POST", "GET")); // TODO: Check others required methods
         config.setAllowedHeaders(List.of(CorsConfiguration.ALL));
 

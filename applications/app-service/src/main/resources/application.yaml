@@ -59,3 +59,14 @@ management:
   endpoint:
     health:
       show-details: always
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /autenticacion/v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /autenticacion/swagger-ui.html
+    config-url: /autenticacion/v3/api-docs/swagger-config
+    url: /autenticacion/v3/api-docs
+    disable-swagger-default-url: true

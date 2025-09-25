@@ -1,0 +1,38 @@
+pluginManagement {
+    repositories {
+        //mavenLocal()
+        //maven { url = '...' }
+        gradlePluginPortal()
+    }
+}
+
+buildCache {
+    local {
+        directory = new File(rootDir, 'build-cache')
+    }
+}
+
+rootProject.name = 'SOLICITUDES'
+
+include ':app-service'
+include ':model'
+include ':usecase'
+project(':app-service').projectDir = file('./applications/app-service')
+project(':model').projectDir = file('./domain/model')
+project(':usecase').projectDir = file('./domain/usecase')
+include ':r2dbc-mysql'
+project(':r2dbc-mysql').projectDir = file('./infrastructure/driven-adapters/r2dbc-mysql')
+include ':rest-consumer'
+project(':rest-consumer').projectDir = file('./infrastructure/driven-adapters/rest-consumer')
+include ':reactive-web'
+project(':reactive-web').projectDir = file('./infrastructure/entry-points/reactive-web')
+include ':metrics'
+project(':metrics').projectDir = file('./infrastructure/helpers/metrics')
+include ':sqs-sender-notificaciones'
+project(':sqs-sender-notificaciones').projectDir = file('./infrastructure/driven-adapters/sqs-sender-notificaciones')
+include ':sqs-sender-capacidad-endeudamiento'
+project(':sqs-sender-capacidad-endeudamiento').projectDir = file('./infrastructure/driven-adapters/sqs-sender-capacidad-endeudamiento')
+include ':sqs-listener-capacidad-endeudamiento'
+project(':sqs-listener-capacidad-endeudamiento').projectDir = file('./infrastructure/entry-points/sqs-listener-capacidad-endeudamiento')
+include ':sqs-sender-reportes'
+project(':sqs-sender-reportes').projectDir = file('./infrastructure/driven-adapters/sqs-sender-reportes')

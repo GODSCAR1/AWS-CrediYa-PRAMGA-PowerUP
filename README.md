@@ -173,4 +173,4 @@ Para ejecutar toda la pila, se necesita una cuenta AWS con los siguientes permis
 - ✅ **Despliegue Automatizado** con Infrastructure as Code
 
 
-*Nota: Al día de 25/09/2025 este reto sería mi primera vez utilizando CloudFormation y Serverless Framework, cualquier feedback es bien recibido.*
+*Nota: Al día de 25/09/2025 este reto sería mi primera vez utilizando AWS, CloudFormation y Serverless Framework, cualquier feedback es bien recibido.*

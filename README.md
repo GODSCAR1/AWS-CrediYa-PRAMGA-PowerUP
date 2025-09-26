@@ -173,4 +173,4 @@ Para ejecutar toda la pila, se necesita una cuenta AWS con los siguientes permis
 - ✅ **Despliegue Automatizado** con Infrastructure as Code
 
 
-*Este proyecto representa una solución completa para la gestión de préstamos, combinando las mejores prácticas de desarrollo con la potencia y escalabilidad de AWS.*
+*Nota: Al día de 25/09/2025 este reto sería mi primera vez utilizando CloudFormation y Serverless Framework, cualquier feedback es bien recibido.*
